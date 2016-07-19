@@ -51,7 +51,7 @@ public class Neo4j_Graph_Store {
 	
 	public static String StartMyServer(String datasource)
 	{
-		String command = "/home/yuhansun/Documents/Real_data/" + datasource+"/neo4j-community-2.3.3/bin/neo4j start";
+		String command = "/home/yuhansun/Documents/Real_data/" + datasource+"/neo4j-community-2.3.3_feline/bin/neo4j start";
 		String result = null;
 		try 
 		{
@@ -99,7 +99,7 @@ public class Neo4j_Graph_Store {
 	
 	public static String StopMyServer(String datasource)
 	{
-		String command = "/home/yuhansun/Documents/Real_data/" + datasource+"/neo4j-community-2.3.3/bin/neo4j stop";
+		String command = "/home/yuhansun/Documents/Real_data/" + datasource+"/neo4j-community-2.3.3_feline/bin/neo4j stop";
 		String result = null;
 		try 
 		{

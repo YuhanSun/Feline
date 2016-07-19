@@ -18,7 +18,7 @@ import org.neo4j.unsafe.batchinsert.BatchInserters;
 public class Neo4j_Graph_Loader {
 	
 	public static ArrayList<String> datasource_a = new ArrayList<String>(){{
-//	    add("citeseerx");
+	    add("citeseerx");
 	    add("go_uniprot");
 	    add("Patents");
 	    add("uniprotenc_150m");
@@ -149,10 +149,12 @@ public class Neo4j_Graph_Loader {
 			String distribution = "Random_spatial_distributed", suffix = "random";
 			int ratio = 80;
 			
-			String entity_path = String.format("/home/yuhansun/Documents/Real_data/%s/%s/%d/entity_feline.txt", datasource, distribution, ratio);
+			String entity_path = String.format("/home/yuhansun/Documents/share/Real_Data/%s/%s/%d/entity_feline.txt", datasource, distribution, ratio);
 			String graph_path = String.format("/home/yuhansun/Documents/Real_data/%s/graph.txt", datasource);
 			String db_path = String.format("/home/yuhansun/Documents/Real_data/%s/%s/data/graph.db", datasource, db_folder_name);
 			LoadFelineGraph(entity_path, graph_path, db_path);
+			
+			
 			
 		}
 	}

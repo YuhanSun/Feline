@@ -182,11 +182,12 @@ public class data_precessing {
 		{
 			for (String distribution : distribution_a)
 			{
-				for(int ratio = 80; ratio<=80; ratio+=20)
+				int ratio = 80;
+//				for(int ratio = 20; ratio<=80; ratio+=20)
 				{
-					String entity_location_path = String.format("/home/yuhansun/Documents/Real_data/%s/%s/%d/entity.txt", datasource, distribution, ratio);
+					String entity_location_path = String.format("/home/yuhansun/Documents/share/Real_Data/%s/%s/%d/entity.txt", datasource, distribution, ratio);
 					String feline_index_path = String.format("/home/yuhansun/Documents/FELINE_final/%s_feline.out", datasource);
-					String new_file_path = String.format("/home/yuhansun/Documents/Real_data/%s/%s/%d/entity_feline.txt", datasource, distribution, ratio);
+					String new_file_path = String.format("/home/yuhansun/Documents/share/Real_Data/%s/%s/%d/entity_feline.txt", datasource, distribution, ratio);
 					Entity_Convert(entity_location_path, feline_index_path, new_file_path);
 				}
 			}

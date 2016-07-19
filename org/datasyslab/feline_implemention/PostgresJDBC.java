@@ -106,9 +106,10 @@ public class PostgresJDBC {
 		}
 	}
 	
-	public static String StartServer()
+	
+	public static String StartServer(String password)
 	{
-		String []cmd = {"/bin/bash","-c","echo data | sudo -S sh -c \"/etc/init.d/postgresql start\""};
+		String []cmd = {"/bin/bash","-c","echo "+password+" | sudo -S sh -c \"/etc/init.d/postgresql start\""};
 		String result = null;
 		try 
 		{
@@ -132,9 +133,9 @@ public class PostgresJDBC {
 		return result;
 	}
 	
-	public static String StopServer()
+	public static String StopServer(String password)
 	{
-		String []cmd = {"/bin/bash","-c","echo data | sudo -S sh -c \"/etc/init.d/postgresql stop\""};
+		String []cmd = {"/bin/bash","-c","echo "+password+" | sudo -S sh -c \"/etc/init.d/postgresql stop\""};
 		String result = null;
 		try 
 		{

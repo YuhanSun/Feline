@@ -184,13 +184,27 @@ public class Postgres_Operation {
 
 	}
 	
+	public void DropIndex(String index_name)
+	{
+		try
+		{	
+			String query = String.format("drop index %s", index_name);
+			System.out.println(query);
+			st.executeUpdate(query);
+		}
+		catch(Exception e)
+		{
+			System.out.println(e.getMessage());
+		}
+	}
+	
 	
 	public static void CreateTable()
 	{
 		Postgres_Operation psql = new Postgres_Operation();
 		try
 		{
-			int ratio = 80;
+			int ratio = 20;
 			for(String datasource : datasource_a)
 			{
 				for(String suffix : suffix_a)
@@ -215,7 +229,7 @@ public class Postgres_Operation {
 		try
 		{
 			psql = new Postgres_Operation();
-			int ratio = 80;
+			int ratio = 20;
 			for(String datasource : datasource_a)
 			{
 				for(int i = 0;i<suffix_a.size();i++)
@@ -246,7 +260,7 @@ public class Postgres_Operation {
 		try
 		{
 			psql = new Postgres_Operation();
-			int ratio = 80;
+			int ratio = 20;
 			for(String datasource : datasource_a)
 			{
 				for(int i = 0;i<suffix_a.size();i++)
@@ -269,8 +283,8 @@ public class Postgres_Operation {
 	
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		//CreateTable();
-		//LoadData();
+		CreateTable();
+		LoadData();
 		CreateGistIndex();
 	}
 

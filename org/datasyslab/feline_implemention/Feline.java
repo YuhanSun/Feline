@@ -30,6 +30,11 @@ public class Feline {
 	public int[] visited;
 	public int QueryCnt;
 	
+	//record variable
+	public int visited_count = 0;
+	public int spa_time = 0;
+	public int reach_time = 0;
+	
 	public Neo4j_Graph_Store neo4j_Graph_Store;
 	
 	public Feline(String datasource, String table_name)
@@ -91,6 +96,9 @@ public class Feline {
 		String query = String.format("match (a)-->(n) where id(a) = %d return id(n), n.level, n.X, n.Y, n.middle, n.post", src);
 		String result = neo4j_Graph_Store.Execute(query);
 		JsonArray jsonArray = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
+		
+		visited_count += jsonArray.size();
+		
 		for(int jsonArray_index = 0;jsonArray_index<jsonArray.size();jsonArray_index++)
 		{
 			JsonObject jsonObject = jsonArray.get(jsonArray_index).getAsJsonObject();
@@ -134,13 +142,14 @@ public class Feline {
 
 			JsonArray jsonArray_src = jsonArray.get(0).getAsJsonObject().get("row").getAsJsonArray();
 			JsonArray jsonArray_trg = jsonArray.get(1).getAsJsonObject().get("row").getAsJsonArray();
+			
+			visited_count += 2;
 
 			int src_level = jsonArray_src.get(0).getAsInt();
 			int trg_level = jsonArray_trg.get(0).getAsInt();
 
 			if(src_level >= trg_level)
 			{
-				
 				return false;
 			}
 			int res = 0;
@@ -189,15 +198,27 @@ public class Feline {
 	{
 		try
 		{
+			visited_count = 0;
+			spa_time = 0;
+			reach_time = 0;
+			
+			long start = System.currentTimeMillis();
 			ResultSet resultSet = this.RangeQuery(rect);
+			spa_time += System.currentTimeMillis() - start;
+			
+			start = System.currentTimeMillis();
 			while(resultSet.next())
 			{
 				int trg = Integer.parseInt(resultSet.getString("id").toString());
 				if(Reach_pc(id, trg))
+				{
+					reach_time += System.currentTimeMillis() - start;
 					return true;
+				}
 				else
 					continue;
 			}
+			reach_time += System.currentTimeMillis() - start;
 			return false;
 		}
 		catch(Exception e)
@@ -278,7 +299,8 @@ public class Feline {
 		boolean break_flag = false;
 		while(rect_size<=101)
 		{
-			HashSet<String> hSet = OwnMethods.GenerateRandomInteger(graph_size, 500);
+			HashSet<String> hSet = null;
+//			HashSet<String> hSet = OwnMethods.GenerateRandomInteger(graph_size, 500);
 			Iterator<String> iterator = hSet.iterator();
 			int i = 0;
 			int true_count = 0;

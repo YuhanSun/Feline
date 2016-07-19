@@ -4,69 +4,82 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.*;
 
+import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.unsafe.batchinsert.BatchInserter;
+import org.neo4j.unsafe.batchinsert.BatchInserters;
 import org.roaringbitmap.RoaringBitmap;
 import org.roaringbitmap.buffer.ImmutableRoaringBitmap;
 
+import com.sun.jersey.api.client.WebResource;
 
 public class OwnMethods {
 	
-	public static void EntityConversionForCopy(String source_filepath, String output_path, String delimiters)
+	public static long GeoReachIndexSize(String GeoReach_filepath)
 	{
-		BufferedReader reader = null;
-		File file = null;
-		FileWriter fw = null;
-		
+		BufferedReader reader_GeoReach = null;
+		File file_GeoReach = null;
+		long bits = 0;
 		try
 		{
-			file = new File(source_filepath);
-			reader = new BufferedReader(new FileReader(file));
-			String temp = null;
-			temp = reader.readLine();
-			
-			fw = new FileWriter(output_path);
-			while((temp = reader.readLine())!=null)
+			file_GeoReach = new File(GeoReach_filepath);
+			reader_GeoReach = new BufferedReader(new FileReader(file_GeoReach));
+			String tempString_GeoReach = null;
+
+			while((tempString_GeoReach = reader_GeoReach.readLine())!= null)
 			{
-				String[] l = temp.split(delimiters);
-				if(Integer.parseInt(l[1]) == 1)
+				String[] l_GeoReach = tempString_GeoReach.split(",");
+				
+				int type = Integer.parseInt(l_GeoReach[1]);
+				switch (type)
 				{
-					String id = l[0];
-					String lon = l[2];
-					String lat = l[3];
-					String line = String.format("%s\t%s,%s\n", id, lon, lat);
-					fw.write(line);
+				case 0:
+					RoaringBitmap r = new RoaringBitmap();
+					for(int i = 2;i<l_GeoReach.length;i++)
+					{
+						int out_neighbor = Integer.parseInt(l_GeoReach[i]);
+						r.add(out_neighbor);
+					}
+					String bitmap_ser = OwnMethods.Serialize_RoarBitmap_ToString(r);
+					bits += bitmap_ser.getBytes().length * 8;
+					break;
+				case 1:
+					bits += 32 * 4;
+					break;
+				case 2:
+					bits += 1;
+					break;
 				}
 			}
-			reader.close();
-			fw.close();
+			reader_GeoReach.close();
 		}
-		catch(Exception e)
+		catch(IOException e)
 		{
 			e.printStackTrace();
 		}
 		finally
 		{
-			if(reader!=null)
-				try {
-					reader.close();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
+			if(reader_GeoReach!=null)
+			{
+				try
+				{
+					reader_GeoReach.close();
+				}
+				catch(IOException e)
+				{	
 					e.printStackTrace();
 				}
-			if(fw!=null)
-				try {
-					fw.close();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+			}
 		}
+		return bits / 8;
 	}
 	
 	public static ArrayList<Long> ReadExperimentNode(String datasource)
 	{
 		String filepath = "/home/yuhansun/Documents/Real_data/"+datasource+"/experiment_id.txt";
-		int offset = OwnMethods.GetNodeCount(datasource);
 		ArrayList<Long> al = new ArrayList<Long>();
 		BufferedReader reader  = null;
 		File file = null;
@@ -77,7 +90,7 @@ public class OwnMethods {
 			String temp = null;
 			while((temp = reader.readLine())!=null)
 			{
-				al.add(Long.parseLong(temp)+offset);
+				al.add(Long.parseLong(temp));
 			}
 			reader.close();
 		}
@@ -102,11 +115,6 @@ public class OwnMethods {
 		return al;
 	}
 	
-	public static void Print(Object o)
-	{
-		System.out.println(o);
-	}
-	
 	//Print elements in an array
 	public static void PrintArray(String[] l)
 	{
@@ -115,22 +123,44 @@ public class OwnMethods {
 		System.out.print("\n");
 	}
 	
-	//Generate Random node_count vertices in the range(0, graph_size) which is attribute id
-	public static HashSet<String> GenerateRandomInteger(long graph_size, int node_count)
+	public static void Print(Object o)
 	{
-		HashSet<String> ids = new HashSet();
+		System.out.println(o);
+	}
+	
+	//Generate Random node_count vertices in the range(0, graph_size) which is attribute id
+	public static HashSet<Long> GenerateRandomInteger(long graph_size, int node_count)
+	{
+		HashSet<Long> ids = new HashSet();
 		
 		Random random = new Random();
 		while(ids.size()<node_count)
 		{
-			Integer id = (int) (random.nextDouble()*graph_size);
-			ids.add(id.toString());
+			Long id = (long) (random.nextDouble()*graph_size);
+			ids.add(id);
 		}
 		
 		return ids;
 	}
 	
+	//Generate absolute id in database depends on attribute_id and node label
+	public static ArrayList<String> GenerateStartNode(WebResource resource, HashSet<String> attribute_ids, String label)
+	{
+		String query = "match (a:" + label + ") where a.id in " + attribute_ids.toString() + " return id(a)";
+		String result = Neo4j_Graph_Store.Execute(resource, query);
+		ArrayList<String> graph_ids = Neo4j_Graph_Store.GetExecuteResultData(result);
+		return graph_ids;
+	}
 	
+	//Generate absolute id in database depends on attribute_id and node label
+	public static ArrayList<String> GenerateStartNode(HashSet<String> attribute_ids, String label)
+	{
+		Neo4j_Graph_Store p_neo4j_graph_store = new Neo4j_Graph_Store();
+		String query = "match (a:" + label + ") where a.id in " + attribute_ids.toString() + " return id(a)";
+		String result = p_neo4j_graph_store.Execute(query);
+		ArrayList<String> graph_ids = Neo4j_Graph_Store.GetExecuteResultData(result);
+		return graph_ids;
+	}
 	
 	public ArrayList<String> ReadFile(String filename)
 	{
@@ -188,26 +218,15 @@ public class OwnMethods {
 	
 	public static void WriteFile(String filename, boolean app, String str)
 	{
-		FileWriter fw = null;
 		try 
 		{
-			fw = new FileWriter(filename,app);
+			FileWriter fw = new FileWriter(filename,app);
 			fw.write(str);
 			fw.close();
 		} 
 		catch (IOException e) 
 		{
 			e.printStackTrace();
-		}
-		finally
-		{
-			if(fw!=null)
-				try {
-					fw.close();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
 		}
 	}
 
@@ -257,10 +276,10 @@ public class OwnMethods {
 		return node_count;		
 	}
 	
-	public static String ClearCache()
+	public static String ClearCache(String password)
 	{
 		//String[] command = {"/bin/bash","-c","echo data| sudo -S ls"};
-		String []cmd = {"/bin/bash","-c","echo data | sudo -S sh -c \"sync; echo 3 > /proc/sys/vm/drop_caches\""};
+		String []cmd = {"/bin/bash","-c","echo "+password+" | sudo -S sh -c \"sync; echo 3 > /proc/sys/vm/drop_caches\""};
 		String result = null;
 		try 
 		{
@@ -284,6 +303,23 @@ public class OwnMethods {
 		return result;
 	}
 	
+//	public static String RestartMyNeo4jServerClearCache(String datasource)
+//	{
+//		String result = "";
+//		result += Neo4j_Graph_Store.StopMyServer(datasource);
+//		result += ClearCache();
+//		result += Neo4j_Graph_Store.StartMyServer(datasource);
+//		return result;
+//	}
+	
+//	public static String RestartNeo4jServerClearCache(String neo4j_path)
+//	{
+//		String result = "";
+//		result += Neo4j_Graph_Store.StopServer(neo4j_path);
+//		result += ClearCache();
+//		result += Neo4j_Graph_Store.StartServer(neo4j_path);
+//		return result;
+//	}
 	
 	public static String Serialize_RoarBitmap_ToString(RoaringBitmap r)
 	{
@@ -320,22 +356,6 @@ public class OwnMethods {
 	    return ir;
 	}
 	
-	public static RoaringBitmap GetRoaringBitmap(String serializedstring)
-	{
-		RoaringBitmap rb = new RoaringBitmap();
-		try
-		{
-		    byte[] nodeIds = serializedstring.getBytes();
-		    ByteArrayInputStream bais = new ByteArrayInputStream(nodeIds);
-		    rb.deserialize(new DataInputStream(bais));
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-		}
-	    return rb;
-	}
-	
 	public static void PrintNode(Node node)
 	{
 		Iterator<String> iter = node.getPropertyKeys().iterator();
@@ -346,34 +366,5 @@ public class OwnMethods {
 			properties.put(key, node.getProperty(key).toString());
 		}
 		System.out.println(properties.toString());
-	}
-	
-	public static ArrayList<Integer> ReadTopoSequence(String filepath)
-	{
-		ArrayList<Integer> seq = null;
-		File file = null;
-		BufferedReader reader = null;
-		try
-		{
-			file = new File(filepath);
-			reader = new BufferedReader(new FileReader(file));
-			String str = reader.readLine();
-			int size = Integer.parseInt(str);
-			seq = new ArrayList<Integer>(size);
-			for(int i = 0;i<size;i++)
-				seq.add(0);
-			while((str = reader.readLine())!=null)
-			{
-				String[] l = str.split("\t");
-				Integer index = Integer.parseInt(l[0]);
-				Integer id = Integer.parseInt(l[1]);
-				seq.set(id, index);
-			}
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-		}
-		return seq;
 	}
 }
