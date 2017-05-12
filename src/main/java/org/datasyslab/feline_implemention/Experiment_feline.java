@@ -331,7 +331,8 @@ public class Experiment_feline {
 
 	public static void main(String[] args) 
 	{
-			Experiment_Ratio();
+//			Experiment_Ratio();
+		System.out.println("test");
 	}
 
 }
