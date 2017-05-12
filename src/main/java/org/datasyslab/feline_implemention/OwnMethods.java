@@ -1,6 +1,7 @@
 package org.datasyslab.feline_implemention;
 
 import java.io.*;
+import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.util.*;
 
@@ -11,12 +12,124 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
+import org.neo4j.unsafe.impl.batchimport.ReadRelationshipCountsDataStep;
 import org.roaringbitmap.RoaringBitmap;
 import org.roaringbitmap.buffer.ImmutableRoaringBitmap;
 
 import com.sun.jersey.api.client.WebResource;
 
 public class OwnMethods {
+	
+	public static ArrayList<String> ReadExperimentNode(String datasource)
+	{
+		String filepath = "/home/yuhansun/Documents/share/Real_Data/"+datasource+"/experiment_id.txt";
+		ArrayList<String> al = new ArrayList<String>();
+		BufferedReader reader  = null;
+		File file = null;
+		try
+		{
+			file = new File(filepath);
+			reader = new BufferedReader(new FileReader(file));
+			String temp = null;
+			while((temp = reader.readLine())!=null)
+			{
+				al.add(temp);
+			}
+			reader.close();
+		}
+		catch(Exception e)
+		{
+
+			e.printStackTrace();
+		}
+		finally
+		{
+			if(reader!=null)
+			{
+				try
+				{
+					reader.close();
+				}
+				catch(IOException e)
+				{					
+				}
+			}
+		}
+		return al;
+	}
+	
+	public static ArrayList<String> ReadExperimentNodeGeneral(String filepath)
+	{
+		ArrayList<String> al = new ArrayList<String>();
+		BufferedReader reader  = null;
+		File file = null;
+		try
+		{
+			file = new File(filepath);
+			reader = new BufferedReader(new FileReader(file));
+			String temp = null;
+			while((temp = reader.readLine())!=null)
+			{
+				al.add(temp);
+			}
+			reader.close();
+		}
+		catch(Exception e)
+		{
+
+			e.printStackTrace();
+		}
+		finally
+		{
+			if(reader!=null)
+			{
+				try
+				{
+					reader.close();
+				}
+				catch(IOException e)
+				{					
+				}
+			}
+		}
+		return al;
+	}
+	
+	public static ArrayList<Integer> ReadSCC(String SCC_filepath, String original_graph_path)
+	{
+		ArrayList<Integer> list = null;
+		BufferedReader reader;
+		String string = null;
+		try
+		{
+			reader = new BufferedReader(new FileReader(new File(SCC_filepath)));
+			string = reader.readLine();
+			
+			long node_count = OwnMethods.GetNodeCountGeneral(original_graph_path);
+			list = new ArrayList();
+			for(long i = 0;i<node_count;i++)
+				list.add((Integer) 0);
+			
+			Integer scc_id = 0;
+			while((string = reader.readLine())!=null)
+			{
+				string = string.substring(1, string.length() - 1);
+				String[] lString = string.split(", ");
+				for(int i = 0;i<lString.length;i++)
+				{
+					long ori_id = Long.parseLong(lString[i]);
+					list.set((int) ori_id, scc_id);
+				}
+				scc_id += 1;
+			}
+			reader.close();
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		return list;
+	}
 	
 	public static long GeoReachIndexSize(String GeoReach_filepath)
 	{
@@ -75,44 +188,6 @@ public class OwnMethods {
 			}
 		}
 		return bits / 8;
-	}
-	
-	public static ArrayList<Long> ReadExperimentNode(String datasource)
-	{
-		String filepath = "/home/yuhansun/Documents/Real_data/"+datasource+"/experiment_id.txt";
-		ArrayList<Long> al = new ArrayList<Long>();
-		BufferedReader reader  = null;
-		File file = null;
-		try
-		{
-			file = new File(filepath);
-			reader = new BufferedReader(new FileReader(file));
-			String temp = null;
-			while((temp = reader.readLine())!=null)
-			{
-				al.add(Long.parseLong(temp));
-			}
-			reader.close();
-		}
-		catch(Exception e)
-		{
-			
-			e.printStackTrace();
-		}
-		finally
-		{
-			if(reader!=null)
-			{
-				try
-				{
-					reader.close();
-				}
-				catch(IOException e)
-				{					
-				}
-			}
-		}
-		return al;
 	}
 	
 	//Print elements in an array
@@ -247,6 +322,34 @@ public class OwnMethods {
             return 0;     
         }     
     }
+	
+	public static int GetNodeCountGeneral(String filepath)
+	{
+		int node_count = 0;
+		File file = null;
+		BufferedReader reader = null;
+		try
+		{
+			file = new File(filepath);
+			reader = new BufferedReader(new FileReader(file));
+			String str = reader.readLine();
+			String[] l = str.split(" ");
+			node_count = Integer.parseInt(l[0]);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		finally
+		{
+			try {
+				reader.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return node_count;		
+	}
 	
 	public static int GetNodeCount(String datasource)
 	{

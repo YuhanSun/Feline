@@ -34,12 +34,26 @@ public class Feline {
 	public int visited_count = 0;
 	public int spa_time = 0;
 	public int reach_time = 0;
+	public int locate_count = 0;
 	
 	public Neo4j_Graph_Store neo4j_Graph_Store;
 	
 	public Feline(String datasource, String table_name)
 	{
 		this.node_count = OwnMethods.GetNodeCount(datasource);
+		int i;
+		visited = new int[node_count];
+		for(i = 0 ; i< node_count; i++)
+			visited[i]=-1;
+		
+		neo4j_Graph_Store = new Neo4j_Graph_Store();
+		postgresJDBC = new PostgresJDBC();
+		this.tablename = table_name;
+	}
+	
+	public Feline(String datasource, String table_name, int dag_node_count)
+	{
+		this.node_count = dag_node_count;
 		int i;
 		visited = new int[node_count];
 		for(i = 0 ; i< node_count; i++)
@@ -57,8 +71,9 @@ public class Feline {
 	
 	public ResultSet RangeQuery(MyRectangle rect)
 	{
-		String query = String.format("select id from %s where %s <@ box '((%f,%f),(%f,%f))'", tablename, location_columnname, rect.min_x, rect.min_y, rect.max_x, rect.max_y);
+		String query = String.format("select distinct scc_id from %s where %s <@ box '((%f,%f),(%f,%f))'", tablename, location_columnname, rect.min_x, rect.min_y, rect.max_x, rect.max_y);
 		ResultSet resultSet = postgresJDBC.Execute(query);
+//		OwnMethods.Print(query);
 		return resultSet;
 	}
 	
@@ -134,9 +149,10 @@ public class Feline {
 			return true;
 		}
 
+		String query = "";
 		try
 		{
-			String query = String.format("match (n) where id(n) in [%d,%d] return n.level, n.X, n.Y, n.middle, n.post", src, trg);
+			query = String.format("match (n) where id(n) in [%d,%d] return n.level, n.X, n.Y, n.middle, n.post", src, trg);
 			String result = neo4j_Graph_Store.Execute(query);
 			JsonArray jsonArray = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
 
@@ -190,26 +206,99 @@ public class Feline {
 		catch(Exception e)
 		{
 			e.printStackTrace();
+			OwnMethods.Print(query);
 		}
 		return false;
 	}
 	
+//	public boolean Reach_pc(int src, ArrayList<Integer> trg_l)
+//	{
+//		try
+//		{
+//			String query = String.format("match (n) where id(n) in [%d] return n.level, n.X, n.Y, n.middle, n.post", src);
+//			String result = neo4j_Graph_Store.Execute(query);
+//			JsonArray jsonArray = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
+//			
+//			JsonArray jsonArray_src = jsonArray.get(0).getAsJsonObject().get("row").getAsJsonArray();
+//			visited_count+=1;
+//			int src_level = jsonArray_src.get(0).getAsInt();
+//			
+//			query = String.format("match (n) where id(n) in %s return n.level, n.X, n.Y, n.middle, n.post", trg_l.toString());
+//			result = neo4j_Graph_Store.Execute(query);
+//			jsonArray = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
+//			visited_count += jsonArray.size();
+//			
+//			for(int i = 0;i<jsonArray.size();i++)
+//			{
+//				JsonArray jsonArray_trg = jsonArray.get(1).getAsJsonObject().get("row").getAsJsonArray();
+//				int trg_level = jsonArray_trg.get(0).getAsInt();
+//				
+//				if(src_level >= trg_level)
+//				{
+//					continue;
+//				}
+//				int res = 0;
+//				
+//				int src_coord_x = jsonArray_src.get(1).getAsInt();
+//				int trg_coord_x = jsonArray_trg.get(1).getAsInt();
+//				if(src_coord_x > trg_coord_x)
+//					res = -1;
+//				
+//				
+//				int src_coord_y = jsonArray_src.get(2).getAsInt();
+//				int trg_coord_y = jsonArray_trg.get(2).getAsInt();
+//				
+//				if(src_coord_y > trg_coord_y)
+//					res = -1;
+//		       	
+//				int src_middle = jsonArray_src.get(3).getAsInt();
+//				int src_post = jsonArray_src.get(4).getAsInt();
+//				int trg_middle = jsonArray_trg.get(3).getAsInt();
+//				int trg_post = jsonArray_trg.get(4).getAsInt();
+//				
+//				if(src_middle <= trg_middle && src_post >= trg_post)
+//					res = 1;
+//
+//				if(res!=0){						
+//					switch(res){
+//					case -1 : 
+//						continue;
+//					case 1 : 
+//						return true;
+//					}
+//				}
+//			}
+//			
+//			hopsTotal = 0;
+//			visited[src]=++QueryCnt;
+//			return go_for_reach_pc(src,trg,true,0, src_level, trg_level, trg_coord_x, trg_coord_y, trg_middle, trg_post);
+//		}
+//		catch(Exception e)
+//		{
+//			e.printStackTrace();
+//		}
+//		return false;
+//	}
+	
 	public boolean RangeReach(int id, MyRectangle rect)
 	{
+		ResultSet resultSet = null;
 		try
 		{
 			visited_count = 0;
 			spa_time = 0;
 			reach_time = 0;
+			locate_count = 0;
 			
 			long start = System.currentTimeMillis();
-			ResultSet resultSet = this.RangeQuery(rect);
+			resultSet = this.RangeQuery(rect);
 			spa_time += System.currentTimeMillis() - start;
 			
 			start = System.currentTimeMillis();
 			while(resultSet.next())
 			{
-				int trg = Integer.parseInt(resultSet.getString("id").toString());
+				locate_count ++;
+				int trg = (resultSet.getInt("scc_id"));
 				if(Reach_pc(id, trg))
 				{
 					reach_time += System.currentTimeMillis() - start;
@@ -224,6 +313,9 @@ public class Feline {
 		catch(Exception e)
 		{
 			e.printStackTrace();
+		}
+		finally{
+			PostgresJDBC.Close(resultSet);
 		}
 		OwnMethods.Print(String.format("Error in RangeReach query: %d (%f,%f,%f,%f)", id, rect.min_x, rect.min_y, rect.max_x, rect.max_y));
 		return false;

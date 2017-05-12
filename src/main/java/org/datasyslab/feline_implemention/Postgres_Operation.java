@@ -1,5 +1,6 @@
 package org.datasyslab.feline_implemention;
 
+import java.lang.reflect.Array;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -55,7 +56,7 @@ public class Postgres_Operation {
 	};
 	
 	private Connection con;
-	private Statement st;
+	public Statement st;
 	private ResultSet rs;
 	
 	public Postgres_Operation()
@@ -111,41 +112,41 @@ public class Postgres_Operation {
 		}
 	}
 
-	public void CreateFelineTable(String datasource, String suffix, int ratio)
-	{
-		try
-		{
-			String tablename = String.format("feline_%s_%s_%d", datasource, suffix, ratio);
-			ArrayList<String> attribute_a = new ArrayList<String>(){
-				{
-					add("id");
-					add("location");
-					add("level");
-					add("X");
-					add("Y");
-					add("middle");
-					add("post");
-				}
-			};
-			ArrayList<String> attrtype_a = new ArrayList<String>(){
-				{
-					add("bigint");
-					add("point");
-					add("bigint");
-					add("bigint");
-					add("bigint");
-					add("bigint");
-					add("bigint");
-				}
-			};
-			CreateTable(tablename, attribute_a, attrtype_a);
-			
-		}
-		catch(Exception e)
-		{
-			System.out.println(e.getMessage());
-		}
-	}
+//	public void CreateFelineTable(String datasource, String suffix, int ratio)
+//	{
+//		try
+//		{
+//			String tablename = String.format("feline_%s_%s_%d", datasource, suffix, ratio);
+//			ArrayList<String> attribute_a = new ArrayList<String>(){
+//				{
+//					add("id");
+//					add("location");
+//					add("level");
+//					add("X");
+//					add("Y");
+//					add("middle");
+//					add("post");
+//				}
+//			};
+//			ArrayList<String> attrtype_a = new ArrayList<String>(){
+//				{
+//					add("bigint");
+//					add("point");
+//					add("bigint");
+//					add("bigint");
+//					add("bigint");
+//					add("bigint");
+//					add("bigint");
+//				}
+//			};
+//			CreateTable(tablename, attribute_a, attrtype_a);
+//			
+//		}
+//		catch(Exception e)
+//		{
+//			System.out.println(e.getMessage());
+//		}
+//	}
 	
 	public void DropTable(String datasource, String suffix, int ratio)
 	{
@@ -199,24 +200,64 @@ public class Postgres_Operation {
 	}
 	
 	
-	public static void CreateTable()
+//	public static void CreateTable()
+//	{
+//		Postgres_Operation psql = new Postgres_Operation();
+//		try
+//		{
+//			int ratio = 20;
+//			for(String datasource : datasource_a)
+//			{
+//				for(String suffix : suffix_a)
+//				{
+//					psql.CreateFelineTable(datasource, suffix, ratio);
+//				}
+//			}
+//		}
+//		catch(Exception e)
+//		{
+//			System.out.println(e.getMessage());
+//		}
+//		finally
+//		{
+//			psql.DisConnect();
+//		}	
+//	}
+	
+	public static void CreateTableYelp()
 	{
-		Postgres_Operation psql = new Postgres_Operation();
+		Postgres_Operation psql = null;
 		try
 		{
-			int ratio = 20;
-			for(String datasource : datasource_a)
+			psql = new Postgres_Operation();
+			String datasource = "Gowalla";
+			for(int target_folder = 2; target_folder <=2; target_folder ++)
 			{
-				for(String suffix : suffix_a)
-				{
-					psql.CreateFelineTable(datasource, suffix, ratio);
-				}
+				ArrayList<String> attribute_a = new ArrayList<String>(){
+					{
+						add("id");
+						add("scc_id");
+						add("location");
+					}
+				};
+				ArrayList<String> type_a = new ArrayList<String>(){
+					{
+						add("bigint");
+						add("bigint");
+						add("point");
+					}
+				};
+
+				psql.CreateTable(String.format("%s_%d", datasource, target_folder), attribute_a, type_a);
+
+				
 			}
 		}
 		catch(Exception e)
 		{
 			System.out.println(e.getMessage());
 		}
+
 		finally
 		{
 			psql.DisConnect();
@@ -254,6 +295,7 @@ public class Postgres_Operation {
 		}	
 	}
 	
+	
 	public static void CreateGistIndex()
 	{
 		Postgres_Operation psql = null;
@@ -281,11 +323,59 @@ public class Postgres_Operation {
 		}
 	}
 	
+	public static void LoadDataYelp()
+	{
+		try
+		{
+			Postgres_Operation psql = new Postgres_Operation();
+			
+			String datasource = "Gowalla";
+			int target_folder = 2;
+			{
+				String tablename = String.format("%s_%d", datasource, target_folder);
+				String file_path = String.format("/home/yuhansun/Documents/share/Real_Data/%s/%s/%d/entity_psql.txt", datasource, "Random_spatial_distributed", target_folder);
+				String query = String.format("copy %s from '%s' using delimiters ' ' with null as 'null'", tablename, file_path);
+				OwnMethods.Print(query);
+				psql.st.execute(query);
+				
+				long start = System.currentTimeMillis();
+				psql.CreateGistIndex(tablename, "location");
+				OwnMethods.Print(System.currentTimeMillis() - start);
+			}
+			
+			
+			psql.DisConnect();
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+	}
+	
+	public static void GetGistConstructionTime()
+	{
+		String tablename = "Yelp_random_80";
+		String att_name = "location";
+		long time = System.currentTimeMillis();
+		
+		Postgres_Operation psql = new Postgres_Operation();
+		long start = System.currentTimeMillis();
+		psql.CreateGistIndex(tablename, att_name);
+		OwnMethods.Print(System.currentTimeMillis() - start);
+		psql.DisConnect();
+	}
+	
 	public static void main(String[] args) {
+		
+//		CreateTableYelp();
+//		LoadDataYelp();
+		
+//		GetGistConstructionTime();
+//		Yelp();
 		// TODO Auto-generated method stub
-		CreateTable();
-		LoadData();
-		CreateGistIndex();
+//		CreateTable();
+//		LoadData();
+//		CreateGistIndex();
 	}
 
 }

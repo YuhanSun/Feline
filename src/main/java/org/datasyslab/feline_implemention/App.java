@@ -1,5 +1,7 @@
 package org.datasyslab.feline_implemention;
 
+import java.util.ArrayList;
+
 /**
  * Hello world!
  *
@@ -14,8 +16,24 @@ public class App
 	
     public static void main( String[] args )
     {
+//    	int start = 153933;
+//		MyRectangle query_rect = new MyRectangle(-115.487384,	36.047015,	-115.095464,	36.120295);
+//		
+//		Feline feline = new Feline("Yelp", "Yelp_2", 486680);
+//		boolean result = feline.RangeReach(start, query_rect);
+//		OwnMethods.Print(result);
     	
-    	OwnMethods.ClearCache("syh19910205");
+    	SpaReachPLL.ExperimentColdPostgresNeo4j(2);
+    	Experiment_feline.ExperimentColdPostgresNeo4j(2);
+		
+//    	ArrayList<Integer> tt = new ArrayList<Integer>(){
+//    		{
+//    			add(0);
+//    			add(2);
+//    		}
+//    	};
+//    	OwnMethods.Print(tt.toString());
+    	
 //    	Postgres_Operation psql = null;
 //    	try
 //    	{
