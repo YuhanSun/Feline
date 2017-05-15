@@ -12,10 +12,12 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import org.datasyslab.feline_implemention.Config.Distribution;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.kernel.impl.util.Access;
@@ -32,7 +34,7 @@ import com.sun.jersey.api.client.AsyncViewResource.Builder;
 import com.sun.jersey.spi.StringReader;
 
 public class SpaReachPLL{
-	
+
 	public static ArrayList<Integer> ReadConvertTable(String filepath)
 	{
 		ArrayList<Integer> table = new ArrayList<Integer>();
@@ -55,10 +57,10 @@ public class SpaReachPLL{
 		}
 		return table;
 	}
-	
-	
-	
-	
+
+
+
+
 	public static ArrayList<MyRectangle> ReadExperimentQueryRectangle(String filepath)
 	{
 		ArrayList<MyRectangle> queryrectangles = new ArrayList<MyRectangle>();
@@ -79,7 +81,7 @@ public class SpaReachPLL{
 		}
 		catch(Exception e)
 		{
-			
+
 			e.printStackTrace();
 		}
 		finally
@@ -99,21 +101,21 @@ public class SpaReachPLL{
 	}
 
 	public static String password = "syh19910205";
-	
+
 	public PostgresJDBC postgresJDBC;
 	private String tablename;
 	public String location_columnname = "location";
-	
+
 	public Neo4j_Graph_Store neo4j_Graph_Store;
-	
+
 	public long postgresql_time;
 	public long neo4j_time;
 	public long judge_time;
-	
+
 	public int AccessNodeCount = 0;
 	public int Neo4jAccessCount = 0;
 	public int locate_count = 0;
-	
+
 	public SpaReachPLL(String tablename)
 	{
 		this.tablename = tablename;
@@ -123,12 +125,12 @@ public class SpaReachPLL{
 		neo4j_time = 0;
 		judge_time = 0;
 	}
-	
+
 	public void Disconnect()
 	{
 		postgresJDBC.DisConnect();
 	}
-	
+
 	public static void LoadData(String from_filepath, String to_filepath, String table_filepath, String db_path)
 	{
 		OwnMethods.Print(String.format("Loading data into %s", db_path));
@@ -139,7 +141,7 @@ public class SpaReachPLL{
 		File file = null;
 		Map<String, String> config = new HashMap<String, String>();
 		config.put("dbms.pagecache.memory", "5g");
-		
+
 		try
 		{
 			Map<Integer,Integer> table = new HashMap<Integer, Integer>();
@@ -154,7 +156,7 @@ public class SpaReachPLL{
 				table.put(second, first);
 			}
 			reader.close();
-			
+
 			inserter = BatchInserters.inserter(new File(db_path).getAbsolutePath(),config);
 			File file_reachFrom = new File(from_filepath);
 			File file_reachTo = new File(to_filepath);
@@ -171,7 +173,7 @@ public class SpaReachPLL{
 				Map<String, Object> properties = new HashMap<String, Object>();
 				properties.put("scc_id", scc_id);
 				properties.put("id", id);
-				
+
 				if(l_rF.length>1)
 				{
 					int[] l = new int[l_rF.length-1];
@@ -231,17 +233,17 @@ public class SpaReachPLL{
 			}
 		}
 	}
-	
+
 	public static void LoadData()
 	{
-//		String datasource = "Patents";
+		//		String datasource = "Patents";
 		ArrayList<String> datasource_a = new ArrayList<String>();
 		datasource_a.add("citeseerx");
 		datasource_a.add("go_uniprot");
-//		datasource_a.add("Patents");
+		//		datasource_a.add("Patents");
 		datasource_a.add("uniprotenc_150m");
 
-//		for(String datasource: datasource_a)
+		//		for(String datasource: datasource_a)
 		String datasource = "Yelp";
 		{
 			String from_filepath = String.format("/home/yuhansun/Documents/share/Real_Data/%s/reachFromIndex.txt", datasource);
@@ -250,9 +252,9 @@ public class SpaReachPLL{
 			String db_path = String.format("/home/yuhansun/Documents/Real_data/%s/neo4j-community-2.3.3_PLL/data/graph.db", datasource);
 			LoadData(from_filepath, to_filepath, table_filepath, db_path);
 		}
-		
+
 	}
-	
+
 	public static void LoadDataYelp()
 	{
 		String datasource = "Gowalla";
@@ -265,20 +267,20 @@ public class SpaReachPLL{
 			String db_path = String.format("/home/yuhansun/Documents/Real_data/%s/neo4j-community-2.3.3_PLL_%d/data/graph.db", datasource, target_folder);
 			LoadData(from_filepath, to_filepath, table_filepath, db_path);
 		}
-		
+
 	}
-	
+
 	public ResultSet RangeQuery(MyRectangle rect)
 	{
 		String query = String.format("select distinct scc_id from %s where %s <@ box '((%f,%f),(%f,%f))'", tablename, location_columnname, rect.min_x, rect.min_y, rect.max_x, rect.max_y);
 		ResultSet resultSet = postgresJDBC.Execute(query);
-//		OwnMethods.Print(query);
+		//		OwnMethods.Print(query);
 		return resultSet;
 	}
-	
+
 	public boolean ReachabilityQuery(int start_id, MyRectangle rect, ArrayList<Integer> converTable) 
 	{
-		
+
 		ResultSet resultSet = null;
 		try
 		{
@@ -286,9 +288,9 @@ public class SpaReachPLL{
 			neo4j_time = 0;
 			AccessNodeCount = 0;
 			locate_count = 0;
-			
+
 			start_id = converTable.get(start_id);
-			
+
 			long start = System.currentTimeMillis();
 			resultSet = this.RangeQuery(rect);
 			postgresql_time+=System.currentTimeMillis() - start;
@@ -330,16 +332,16 @@ public class SpaReachPLL{
 					if(i!=bulksize)
 						continue;
 				}
-				
+
 				if(i == bulksize);
 				{
 					query = String.format("match (n) where id(n) in %s return n", trg_l.toString());
-					
+
 					start = System.currentTimeMillis();
 					result = neo4j_Graph_Store.Execute(query);
 					jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
 					neo4j_time+=System.currentTimeMillis() - start;
-					
+
 					AccessNodeCount+=bulksize;
 					Neo4jAccessCount+=1;
 
@@ -378,7 +380,7 @@ public class SpaReachPLL{
 						}
 					}
 					judge_time += System.currentTimeMillis() - start;
-					
+
 					i = 0;
 					trg_l.clear();
 				}
@@ -477,32 +479,32 @@ public class SpaReachPLL{
 			PostgresJDBC.Close(resultSet);
 		}
 	}
-	
+
 	public static void Experiment()
 	{
 		ArrayList<String> datasource_a = new ArrayList<String>();
-//		datasource_a.add("citeseerx");
-//				datasource_a.add("go_uniprot");
-//				datasource_a.add("Patents");
-//				datasource_a.add("uniprotenc_150m");
+		//		datasource_a.add("citeseerx");
+		//				datasource_a.add("go_uniprot");
+		//				datasource_a.add("Patents");
+		//				datasource_a.add("uniprotenc_150m");
 
 		String suffix = "random";
 
-//		for(int name_index = 0;name_index<datasource_a.size();name_index++)
+		//		for(int name_index = 0;name_index<datasource_a.size();name_index++)
 		{
 			String datasource = "Yelp";
 			String resultpath = "/home/yuhansun/Documents/Real_data/query_time_PLL_"+suffix+".csv";
 			String db_path = String.format("/home/yuhansun/Documents/Real_data/%s/neo4j-community-2.3.3_PLL", datasource);
 			OwnMethods.WriteFile(resultpath, true, datasource+"\n");
-			
+
 			String SCC_filepath = String.format("/home/yuhansun/Documents/share/Real_Data/%s/SCC.txt", datasource);
 			String original_graph_path = String.format("/home/yuhansun/Documents/share/Real_Data/%s/graph_entity.txt", datasource);
 			ArrayList<Integer> refer_table = OwnMethods.ReadSCC(SCC_filepath, original_graph_path);
-			
+
 			String convertTable_path = String.format("/home/yuhansun/Documents/share/Real_Data/%s/table.txt", datasource);
 			ArrayList<Integer> converTable = ReadConvertTable(convertTable_path);
 			{
-//				for(int ratio = 20;ratio<=20;ratio+=20)
+				//				for(int ratio = 20;ratio<=20;ratio+=20)
 				int ratio = 80;
 				{
 					OwnMethods.WriteFile(resultpath, true, ratio+"\n");
@@ -521,7 +523,7 @@ public class SpaReachPLL{
 					boolean isrun = true;
 					boolean isbreak = false;
 					int experiment_count = 20;
-//					int experiment_count = 5;
+					//					int experiment_count = 5;
 					{
 						while(selectivity<=0.11)
 						{
@@ -538,7 +540,7 @@ public class SpaReachPLL{
 							OwnMethods.Print(OwnMethods.ClearCache(password));
 							OwnMethods.Print(PostgresJDBC.StartServer(password));
 							OwnMethods.Print(Neo4j_Graph_Store.StartServer(db_path));
-							
+
 							try {
 								Thread.currentThread().sleep(5000);
 							} catch (InterruptedException e1) {
@@ -560,7 +562,7 @@ public class SpaReachPLL{
 							int time_PLL = 0, time_spa = 0, time_reach = 0, locate_count = 0;
 							for(int i = 0;i<experiment_count;i++)
 							{
-								
+
 								MyRectangle query_rect = queryrectangles.get(i);
 
 								OwnMethods.Print(String.format("index:%d\t", i));
@@ -579,13 +581,13 @@ public class SpaReachPLL{
 									OwnMethods.Print(String.format("Locate count:%d\n", PLL.locate_count));
 									if(result3)
 										true_count++;
-									
+
 									time_PLL += time;
 									time_spa += PLL.postgresql_time;
 									time_reach += PLL.neo4j_time;
 									accessnodecount += PLL.AccessNodeCount;
 									locate_count += PLL.locate_count;
-									
+
 								}
 								catch(Exception e)
 								{
@@ -614,32 +616,32 @@ public class SpaReachPLL{
 			OwnMethods.WriteFile(resultpath, true, "\n");
 		}		
 	}
-	
+
 	public static void ExperimentColdPostgres()
 	{
 		ArrayList<String> datasource_a = new ArrayList<String>();
-//		datasource_a.add("citeseerx");
-//				datasource_a.add("go_uniprot");
-//				datasource_a.add("Patents");
-//				datasource_a.add("uniprotenc_150m");
+		//		datasource_a.add("citeseerx");
+		//				datasource_a.add("go_uniprot");
+		//				datasource_a.add("Patents");
+		//				datasource_a.add("uniprotenc_150m");
 
 		String suffix = "random";
 
-//		for(int name_index = 0;name_index<datasource_a.size();name_index++)
+		//		for(int name_index = 0;name_index<datasource_a.size();name_index++)
 		{
 			String datasource = "Yelp";
 			String resultpath = "/home/yuhansun/Documents/Real_data/query_time_PLL_"+suffix+".csv";
 			String db_path = String.format("/home/yuhansun/Documents/Real_data/%s/neo4j-community-2.3.3_PLL", datasource);
 			OwnMethods.WriteFile(resultpath, true, datasource+"(ColdPostgres)\n");
-			
+
 			String SCC_filepath = String.format("/home/yuhansun/Documents/share/Real_Data/%s/SCC.txt", datasource);
 			String original_graph_path = String.format("/home/yuhansun/Documents/share/Real_Data/%s/graph_entity.txt", datasource);
 			ArrayList<Integer> refer_table = OwnMethods.ReadSCC(SCC_filepath, original_graph_path);
-			
+
 			String convertTable_path = String.format("/home/yuhansun/Documents/share/Real_Data/%s/table.txt", datasource);
 			ArrayList<Integer> converTable = ReadConvertTable(convertTable_path);
 			{
-//				for(int ratio = 20;ratio<=20;ratio+=20)
+				//				for(int ratio = 20;ratio<=20;ratio+=20)
 				int ratio = 80;
 				{
 					OwnMethods.WriteFile(resultpath, true, ratio+"\n");
@@ -658,7 +660,7 @@ public class SpaReachPLL{
 					boolean isrun = true;
 					boolean isbreak = false;
 					int experiment_count = 10;
-//					int experiment_count = 5;
+					//					int experiment_count = 5;
 					{
 						while(selectivity<=0.11)
 						{
@@ -673,7 +675,7 @@ public class SpaReachPLL{
 							//PLL
 							OwnMethods.Print(OwnMethods.ClearCache(password));
 							OwnMethods.Print(Neo4j_Graph_Store.StartServer(db_path));
-							
+
 							try {
 								Thread.currentThread().sleep(5000);
 							} catch (InterruptedException e1) {
@@ -682,7 +684,7 @@ public class SpaReachPLL{
 							}
 
 							String table_name = String.format("%s_random_%d",datasource, ratio);
-							
+
 
 							try {
 								Thread.currentThread().sleep(5000);
@@ -695,7 +697,7 @@ public class SpaReachPLL{
 							int time_PLL = 0, time_spa = 0, time_reach = 0, locate_count = 0;
 							for(int i = 0;i<experiment_count;i++)
 							{
-								
+
 								MyRectangle query_rect = queryrectangles.get(i);
 
 								OwnMethods.Print(String.format("index:%d\t", i));
@@ -704,17 +706,17 @@ public class SpaReachPLL{
 
 								try
 								{
-									
-//									OwnMethods.Print(PostgresJDBC.StopServer(password));
-//									OwnMethods.Print(OwnMethods.ClearCache(password));
-//									OwnMethods.Print(PostgresJDBC.StartServer(password));
-									
+
+									//									OwnMethods.Print(PostgresJDBC.StopServer(password));
+									//									OwnMethods.Print(OwnMethods.ClearCache(password));
+									//									OwnMethods.Print(PostgresJDBC.StartServer(password));
+
 									PostgresJDBC.StopServer(password);
 									OwnMethods.ClearCache(password);
 									PostgresJDBC.StartServer(password);
-									
+
 									SpaReachPLL PLL= new SpaReachPLL(table_name);
-									
+
 									long start = System.currentTimeMillis();
 									id = refer_table.get(id);
 									boolean result3 = PLL.ReachabilityQuery(id, query_rect, converTable);
@@ -724,7 +726,7 @@ public class SpaReachPLL{
 									OwnMethods.Print(String.format("Total Time:%d", time));
 									if(result3)
 										true_count++;
-									
+
 									time_PLL += time;
 									time_spa += PLL.postgresql_time;
 									time_reach += PLL.neo4j_time;
@@ -732,7 +734,7 @@ public class SpaReachPLL{
 									locate_count += PLL.locate_count;
 									OwnMethods.Print(String.format("Locate count:%d\n", PLL.locate_count));
 									PLL.Disconnect();
-									
+
 								}
 								catch(Exception e)
 								{
@@ -760,32 +762,32 @@ public class SpaReachPLL{
 			OwnMethods.WriteFile(resultpath, true, "\n");
 		}		
 	}
-	
+
 	public static void ExperimentColdPostgresNeo4j_backup()
 	{
 		ArrayList<String> datasource_a = new ArrayList<String>();
-//		datasource_a.add("citeseerx");
-//				datasource_a.add("go_uniprot");
-//				datasource_a.add("Patents");
-//				datasource_a.add("uniprotenc_150m");
+		//		datasource_a.add("citeseerx");
+		//				datasource_a.add("go_uniprot");
+		//				datasource_a.add("Patents");
+		//				datasource_a.add("uniprotenc_150m");
 
 		String suffix = "random";
 
-//		for(int name_index = 0;name_index<datasource_a.size();name_index++)
+		//		for(int name_index = 0;name_index<datasource_a.size();name_index++)
 		{
 			String datasource = "Yelp";
 			String resultpath = "/home/yuhansun/Documents/Real_data/query_time_PLL_"+suffix+".csv";
 			String db_path = String.format("/home/yuhansun/Documents/Real_data/%s/neo4j-community-2.3.3_PLL", datasource);
 			OwnMethods.WriteFile(resultpath, true, datasource+"(ColdPostgresNeo4j)\n");
-			
+
 			String SCC_filepath = String.format("/home/yuhansun/Documents/share/Real_Data/%s/SCC.txt", datasource);
 			String original_graph_path = String.format("/home/yuhansun/Documents/share/Real_Data/%s/graph_entity.txt", datasource);
 			ArrayList<Integer> refer_table = OwnMethods.ReadSCC(SCC_filepath, original_graph_path);
-			
+
 			String convertTable_path = String.format("/home/yuhansun/Documents/share/Real_Data/%s/table.txt", datasource);
 			ArrayList<Integer> converTable = ReadConvertTable(convertTable_path);
 			{
-//				for(int ratio = 20;ratio<=20;ratio+=20)
+				//				for(int ratio = 20;ratio<=20;ratio+=20)
 				int ratio = 80;
 				{
 					OwnMethods.WriteFile(resultpath, true, ratio+"\n");
@@ -804,7 +806,7 @@ public class SpaReachPLL{
 					boolean isrun = true;
 					boolean isbreak = false;
 					int experiment_count = 100;
-//					int experiment_count = 5;
+					//					int experiment_count = 5;
 					{
 						while(selectivity<=0.11)
 						{
@@ -822,7 +824,7 @@ public class SpaReachPLL{
 							int time_PLL = 0, time_spa = 0, time_reach = 0, locate_count = 0;
 							for(int i = 0;i<experiment_count;i++)
 							{
-								
+
 								MyRectangle query_rect = queryrectangles.get(i);
 
 								OwnMethods.Print(String.format("index:%d\t", i));
@@ -831,26 +833,26 @@ public class SpaReachPLL{
 
 								try
 								{
-									
-//									OwnMethods.Print(PostgresJDBC.StopServer(password));
-//									OwnMethods.Print(OwnMethods.ClearCache(password));
-//									OwnMethods.Print(PostgresJDBC.StartServer(password));
-									
-									
+
+									//									OwnMethods.Print(PostgresJDBC.StopServer(password));
+									//									OwnMethods.Print(OwnMethods.ClearCache(password));
+									//									OwnMethods.Print(PostgresJDBC.StartServer(password));
+
+
 									PostgresJDBC.StopServer(password);
 									OwnMethods.ClearCache(password);
 									PostgresJDBC.StartServer(password);
 									Neo4j_Graph_Store.StartServer(db_path);
-									
+
 									try {
 										Thread.currentThread().sleep(3000);
 									} catch (InterruptedException e1) {
 										// TODO Auto-generated catch block
 										e1.printStackTrace();
 									}
-									
+
 									SpaReachPLL PLL= new SpaReachPLL(table_name);
-									
+
 									long start = System.currentTimeMillis();
 									id = refer_table.get(id);
 									boolean result3 = PLL.ReachabilityQuery(id, query_rect, converTable);
@@ -860,7 +862,7 @@ public class SpaReachPLL{
 									OwnMethods.Print(String.format("Total Time:%d", time));
 									if(result3)
 										true_count++;
-									
+
 									time_PLL += time;
 									time_spa += PLL.postgresql_time;
 									time_reach += PLL.neo4j_time;
@@ -869,7 +871,7 @@ public class SpaReachPLL{
 									OwnMethods.Print(String.format("Locate count:%d\n", PLL.locate_count));
 									PLL.Disconnect();
 									OwnMethods.Print(Neo4j_Graph_Store.StopServer(db_path));
-									
+
 								}
 								catch(Exception e)
 								{
@@ -895,12 +897,12 @@ public class SpaReachPLL{
 			OwnMethods.WriteFile(resultpath, true, "\n");
 		}		
 	}
-	
+
 	public static void ExperimentColdPostgresNeo4j(int target_folder)
 	{
 		String datasource = "Gowalla";
 		String distribution = "Random_spatial_distributed";
-//		int target_folder = 2;
+		//		int target_folder = 2;
 		String resultpath = String.format("/home/yuhansun/Documents/share/Real_Data/GeoReach_Experiment/result/%s_PLL_querytime.csv", datasource);
 		String db_path = String.format("/home/yuhansun/Documents/Real_data/%s/neo4j-community-2.3.3_PLL_%d", datasource, target_folder);
 		OwnMethods.WriteFile(resultpath, true, datasource + "\t"+ target_folder +"\t(ColdPostgresNeo4j)\n");
@@ -917,9 +919,9 @@ public class SpaReachPLL{
 
 				String querynodeid_filepath = String.format("/home/yuhansun/Documents/share/Real_Data/%s/%s/%d/experiment_id.txt", datasource, distribution, target_folder);
 				ArrayList<String> experiment_id_al = OwnMethods.ReadExperimentNodeGeneral(querynodeid_filepath);
-				
+
 				double selectivity = 0.0001;
-//				double selectivity = 0.0001;
+				//				double selectivity = 0.0001;
 				boolean isrun = true;
 				boolean isbreak = false;
 				int experiment_count = 20;
@@ -994,10 +996,10 @@ public class SpaReachPLL{
 						}
 						OwnMethods.Print(String.format("\nTotal locate count:\t%s\n", locate_count));
 						OwnMethods.WriteFile(resultpath, true, time_spa/experiment_count + "\t" + time_reach/experiment_count + "\t" +time_PLL/experiment_count+"\t" + accessnodecount/experiment_count + "\t" + locate_count/experiment_count + "\t");
-//						if(time_PLL / experiment_count >= 50000 && experiment_count >=10)
-//							experiment_count = 10;
-//						if(time_PLL/experiment_count >= 100000 && experiment_count >= 5)
-//							experiment_count =3;
+						//						if(time_PLL / experiment_count >= 50000 && experiment_count >=10)
+						//							experiment_count = 10;
+						//						if(time_PLL/experiment_count >= 100000 && experiment_count >= 5)
+						//							experiment_count =3;
 
 						if(isbreak)
 							break;
@@ -1010,7 +1012,7 @@ public class SpaReachPLL{
 		}
 		OwnMethods.WriteFile(resultpath, true, "\n");
 	}
-	
+
 	public static void ExperimentCorrectness()
 	{
 		String datasource = "Yelp";
@@ -1029,14 +1031,14 @@ public class SpaReachPLL{
 
 				String querynodeid_filepath = String.format("/home/yuhansun/Documents/share/Real_Data/%s/%s/%d/experiment_id.txt", datasource, distribution, target_folder);
 				ArrayList<String> experiment_id_al = OwnMethods.ReadExperimentNodeGeneral(querynodeid_filepath);
-				
+
 				double selectivity = 0.00001;
 				boolean isrun = true;
 				boolean isbreak = false;
 				int experiment_count = 20;
 				//					int experiment_count = 5;
 				{
-//					while(selectivity<=0.11)
+					//					while(selectivity<=0.11)
 					{
 
 						int log = (int)Math.log10(selectivity);
@@ -1047,7 +1049,7 @@ public class SpaReachPLL{
 						//PLL
 						String table_name = String.format("%s_%d",datasource, target_folder);
 						SpaReachPLL PLL= new SpaReachPLL(table_name);
-						
+
 						int accessnodecount = 0;
 						int time_PLL = 0, time_spa = 0, time_reach = 0, locate_count = 0;
 						for(int i = 0;i<experiment_count;i++)
@@ -1095,33 +1097,32 @@ public class SpaReachPLL{
 			}
 		}
 	}
-	
-	public static void Experiment_Ratio()
+
+	public static void Experiment_Ratio_Hot()
 	{
 		ArrayList<String> datasource_a = new ArrayList<String>();
 		datasource_a.add("citeseerx");
-				datasource_a.add("go_uniprot");
-				datasource_a.add("Patents");
-				datasource_a.add("uniprotenc_150m");
+		datasource_a.add("go_uniprot");
+		datasource_a.add("Patents");
+		datasource_a.add("uniprotenc_150m");
 
 		String suffix = "random";
 
-		for(int name_index = 0;name_index<datasource_a.size();name_index++)
+		for(String datasource : datasource_a)
 		{
-			String datasource = datasource_a.get(name_index);
 			String resultpath = "/home/yuhansun/Documents/share/Real_Data/GeoReach_Experiment/result/Experiment_1/query_time_PLL_ratio_"+suffix+".csv";
 			String db_path = String.format("/home/yuhansun/Documents/Real_data/%s/neo4j-community-2.3.3_PLL", datasource);
 			OwnMethods.WriteFile(resultpath, true, datasource+"\n");
 			OwnMethods.WriteFile(resultpath, true, "spatial_range\tSpa_time\treach_time\tPLL_time\tvisit_node_count\ttrue_count\n");
-			
+
 			String convertTable_path = String.format("/home/yuhansun/Documents/share/Real_Data/%s/table.txt", datasource);
 			ArrayList<Integer> converTable = ReadConvertTable(convertTable_path);
 			{
 				for(int ratio = 20;ratio<=80;ratio+=20)
-//				int ratio = 80;
+					//				int ratio = 80;
 				{
 					OwnMethods.WriteFile(resultpath, true, ratio+"\n");
-					
+
 					ArrayList<String> experiment_id_al = OwnMethods.ReadExperimentNode(datasource);
 
 					ArrayList<Double> a_x = new ArrayList<Double>();
@@ -1133,10 +1134,10 @@ public class SpaReachPLL{
 					double spatial_total_range = 1000;
 					boolean isrun = true;
 					boolean isbreak = false;
-//					int experiment_count = experiment_id_al.size();
+					//					int experiment_count = experiment_id_al.size();
 					int experiment_count = 10;
 					{
-//						while(selectivity<=0.11)
+						//						while(selectivity<=0.11)
 						{
 							double rect_size = spatial_total_range * Math.sqrt(selectivity);
 							OwnMethods.WriteFile(resultpath, true, selectivity+"\t");
@@ -1194,12 +1195,12 @@ public class SpaReachPLL{
 									OwnMethods.Print(String.format("Time:%d", time));
 									if(result3)
 										true_count++;
-									
+
 									time_PLL += time;
 									time_reach += PLL.postgresql_time;
 									time_spa += PLL.neo4j_time;
 									accessnodecount += PLL.AccessNodeCount;
-									
+
 								}
 								catch(Exception e)
 								{
@@ -1223,27 +1224,111 @@ public class SpaReachPLL{
 			}
 
 			OwnMethods.WriteFile(resultpath, true, "\n");
-			
+
 		}		
 	}
-	
+
+	public static void Experiment_Ratio_Cold()
+	{
+		try
+		{
+			double selectivity = 0.001;
+			int experiment_count = 3;
+			String distribution = Distribution.Random_spatial_distributed.name();
+			ArrayList<String> datasource_a = new ArrayList<String>(Arrays.asList("uniprotenc_150m", "Patents", "go_uniprot", "citeseerx"));
+
+			for(String datasource : datasource_a)
+			{
+				String graph_path = String.format("/mnt/hgfs/Ubuntu_shared/Real_Data/%s/new_graph.txt", datasource);
+				int nodeCount = OwnMethods.GetNodeCountGeneral(graph_path);
+
+				//			String resultpath = "/home/yuhansun/Documents/share/Real_Data/GeoReach_Experiment/result/Experiment_1/query_time_PLL_ratio_"+suffix+".csv";
+				String resultpath = "/mnt/hgfs/Experiment_Result/GeoReach_Experiment/result/ratio/query_time_feline.csv";
+				String db_path = String.format("/home/yuhansun/Documents/Real_data/%s/neo4j-community-2.3.3_PLL", datasource);
+				OwnMethods.WriteFile(resultpath, true, datasource+ "\t" + selectivity + "\tColdPostgresNeo4j\n");
+				OwnMethods.WriteFile(resultpath, true, "ratio\tSpa_time\treach_time\tPLL_time\tvisit_node_count\ttrue_count\n");
+
+				String convertTable_path = String.format("/mnt/hgfs/Ubuntu_shared/Real_Data/%s/table.txt", datasource);
+				ArrayList<Integer> converTable = ReadConvertTable(convertTable_path);
+				for(int ratio = 20;ratio<=80;ratio+=20)
+				{
+					String querynodeid_filepath = String.format("/mnt/hgfs/Experiment_Result/GeoReach_Experiment"
+							+ "/experiment_query/%s/experiment_id.txt", datasource);
+					ArrayList<Integer> nodeids = OwnMethods.readIntegerArray(querynodeid_filepath);
+
+					int spaNodeCount = (int) (nodeCount * (100-ratio) / 100.0); 
+					String queryrectangle_filepath = String.format("/mnt/hgfs/Experiment_Result/GeoReach_Experiment"
+							+ "/experiment_query/%s/%s_%d_queryrect_%d.txt", datasource, distribution, ratio, (int) (spaNodeCount * selectivity));
+					ArrayList<MyRectangle> queryrectangles = OwnMethods.ReadExperimentQueryRectangle(queryrectangle_filepath);
+
+					int true_count = 0;
+
+					int accessnodecount = 0;
+					int time_PLL = 0, time_spa = 0, time_reach = 0;
+					for(int i = 0;i<experiment_count;i++)
+					{
+						OwnMethods.Print(PostgresJDBC.StopServer(password));
+						OwnMethods.Print(OwnMethods.ClearCache(password));
+						OwnMethods.Print(PostgresJDBC.StartServer(password));
+						OwnMethods.Print(Neo4j_Graph_Store.StartServer(db_path));
+						
+						Thread.currentThread().sleep(5000);
+						
+						String table_name = String.format("%s_%s_%d",datasource, distribution, ratio);
+						SpaReachPLL PLL= new SpaReachPLL(table_name);
+						
+						Thread.currentThread().sleep(5000);
+						
+						System.out.println(i);
+						int id = nodeids.get(i);
+						MyRectangle queryrect = queryrectangles.get(i);
+						
+						long start = System.currentTimeMillis();
+						boolean result3 = PLL.ReachabilityQuery(id, queryrect, converTable);
+						long time = System.currentTimeMillis() - start;
+						System.out.println(result3);
+						OwnMethods.Print(String.format("Time:%d", time));
+						if(result3)
+							true_count++;
+
+						time_PLL += time;
+						time_reach += PLL.postgresql_time;
+						time_spa += PLL.neo4j_time;
+						accessnodecount += PLL.AccessNodeCount;
+						
+						PLL.Disconnect();
+						System.out.println(Neo4j_Graph_Store.StopServer(db_path));
+					}
+					OwnMethods.WriteFile(resultpath, true, ratio + "\t" + time_spa/experiment_count + "\t" + time_reach/experiment_count 
+							+ "\t" +time_PLL/experiment_count+"\t" + accessnodecount/experiment_count + "\t\n");
+				}
+				OwnMethods.WriteFile(resultpath, true, "\n");
+			}		
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			e.printStackTrace();System.exit(-1);
+		}
+	}
+
 	public static void app()
 	{
 		int start = 153933;
 		MyRectangle query_rect = new MyRectangle(-115.487384,	36.047015,	-115.095464,	36.120295);
-		
+
 		ArrayList<Integer> converTable = ReadConvertTable("/home/yuhansun/Documents/share/Real_Data/Yelp/Random_spatial_distributed/2/table.txt");
 		SpaReachPLL pll = new SpaReachPLL("Yelp_2");
 		boolean result = pll.ReachabilityQuery(start, query_rect, converTable);
 		OwnMethods.Print(result);
 	}
-	
+
 	public static void main(String[] args) {
-//		app();
-//		LoadDataYelp();
-//		Experiment();
-		ExperimentColdPostgresNeo4j(2);
-//		Experiment_Ratio();
-//		ExperimentCorrectness();
+		//		app();
+		//		LoadDataYelp();
+		//		Experiment();
+//		ExperimentColdPostgresNeo4j(2);
+		//		Experiment_Ratio();
+		//		ExperimentCorrectness();
+		Experiment_Ratio_Cold();
 	}
 }

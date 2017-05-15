@@ -1,6 +1,11 @@
 package org.datasyslab.feline_implemention;
 
 public class Config	{
+	public static enum Distribution 
+	{
+		Random_spatial_distributed, Clustered_distributed, Zipf_distributed
+	}
+	
 	private String SERVER_ROOT_URI = "http://localhost:7474/db/data";
 	
 //	private String suffix = "";

@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,7 +25,7 @@ public class Neo4j_Graph_Loader {
 //	    add("uniprotenc_150m");
 //		add("uniprotenc_22m");
 //	    add("uniprotenc_100m");
-		add("Yelp");
+//		add("Yelp");
 	    
 	}};
 	
@@ -239,6 +240,9 @@ public class Neo4j_Graph_Loader {
 		}
 	}
 	
+	/**
+	 * load feline neo4j graph for real dataset
+	 */
 	public static void LoadFelineGraph()
 	{
 		String datasource = "Gowalla";
@@ -255,6 +259,28 @@ public class Neo4j_Graph_Loader {
 		}
 	}
 
+	/**
+	 * load feline neo4j graph for synthetic dataset
+	 */
+	public static void loadFelineGraphSynthetic()
+	{
+		ArrayList<String> datasource_a = new ArrayList<String>(Arrays.asList("uniprotenc_150m", "Patents", "go_uniprot", "citeseerx"));
+		String distribution = "Random_spatial_distributed";
+		for (String datasource : datasource_a)
+		{
+			for ( int ratio = 20; ratio < 90; ratio += 20)
+			{
+				String graph_path = String.format("/mnt/hgfs/Ubuntu_shared/Real_Data/%s/new_graph.txt", datasource);
+				String feline_path = String.format("/home/yuhansun/Documents/FELINE_final/"
+						+ "%s_feline.out", datasource);
+				
+				String db_folder_name = String.format("neo4j-community-2.3.3_feline");
+				String db_path = String.format("/home/yuhansun/Documents/Real_data/%s/%s/data/graph.db", datasource, db_folder_name);
+				LoadFelineGraph(feline_path, graph_path, db_path);
+			}
+		}
+	}
+	
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		LoadFelineGraph();

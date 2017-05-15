@@ -20,6 +20,69 @@ import com.sun.jersey.api.client.WebResource;
 
 public class OwnMethods {
 	
+	/**
+	 * read integer arraylist
+	 * @param path
+	 * @return
+	 */
+	public static ArrayList<Integer> readIntegerArray(String path)
+	{
+		String line = null;
+		ArrayList<Integer> arrayList = new ArrayList<Integer>();
+		try {
+			BufferedReader reader = new BufferedReader(new FileReader(new File(path)));
+			while ( (line = reader.readLine()) != null )
+			{
+				int x = Integer.parseInt(line);
+				arrayList.add(x);
+			}
+			reader.close();
+		} catch (Exception e) {
+			// TODO: handle exception
+			e.printStackTrace();
+		}
+		return arrayList;
+	}
+	
+	public static ArrayList<MyRectangle> ReadExperimentQueryRectangle(String filepath) {
+		ArrayList<MyRectangle> queryrectangles;
+		block13 : {
+			queryrectangles = new ArrayList<MyRectangle>();
+			BufferedReader reader = null;
+			File file = null;
+			try {
+				try {
+					file = new File(filepath);
+					reader = new BufferedReader(new FileReader(file));
+					String temp = null;
+					while ((temp = reader.readLine()) != null) {
+						String[] line_list = temp.split("\t");
+						MyRectangle rect = new MyRectangle(Double.parseDouble(line_list[0]), Double.parseDouble(line_list[1]), Double.parseDouble(line_list[2]), Double.parseDouble(line_list[3]));
+						queryrectangles.add(rect);
+					}
+					reader.close();
+				}
+				catch (Exception e) {
+					e.printStackTrace();
+					if (reader == null) break block13;
+					try {
+						reader.close();
+					}
+					catch (IOException var8_8) {}
+				}
+			}
+			finally {
+				if (reader != null) {
+					try {
+						reader.close();
+					}
+					catch (IOException var8_10) {}
+				}
+			}
+		}
+		return queryrectangles;
+	}
+	
 	public static ArrayList<String> ReadExperimentNode(String datasource)
 	{
 		String filepath = "/home/yuhansun/Documents/share/Real_Data/"+datasource+"/experiment_id.txt";

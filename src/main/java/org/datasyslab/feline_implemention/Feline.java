@@ -38,6 +38,19 @@ public class Feline {
 	
 	public Neo4j_Graph_Store neo4j_Graph_Store;
 	
+	public Feline(int nodeCount, String table_name)
+	{
+		this.node_count = nodeCount;
+		int i;
+		visited = new int[node_count];
+		for(i = 0 ; i< node_count; i++)
+			visited[i]=-1;
+		
+		neo4j_Graph_Store = new Neo4j_Graph_Store();
+		postgresJDBC = new PostgresJDBC();
+		this.tablename = table_name;
+	}
+	
 	public Feline(String datasource, String table_name)
 	{
 		this.node_count = OwnMethods.GetNodeCount(datasource);
@@ -321,115 +334,115 @@ public class Feline {
 		return false;
 	}
 	
-	public static void Reach_Correctness()
-	{
-		String testfile = String.format("/home/yuhansun/Downloads/tests1/cit-Patents_500k.test");
-		BufferedReader reader = null;
-		BufferedReader reader_result = null;
-		Feline feline = new Feline("Patents","");
-		Neo4j_Graph_Store neo4j_Graph_Store = new Neo4j_Graph_Store();
-		try
-		{
-			//read result file
-			String line = null;
-			String result_path = "/home/yuhansun/Documents/share/result.txt";
-			reader_result = new BufferedReader(new FileReader(new File(result_path)));
-			ArrayList<Integer> results = new ArrayList<Integer>();
-			while((line = reader_result.readLine()) != null)
-			{
-				int result = Integer.parseInt(line);
-				results.add(result);
-			}
-			reader_result.close();
-			
-			reader = new BufferedReader(new FileReader(new File(testfile)));
-			
-			int i = 0;
-			while((line = reader.readLine()) != null)
-			{
-				OwnMethods.Print(i);
-				String[] line_list = line.split(" ");
-				int src = Integer.parseInt(line_list[0]);
-				int trg = Integer.parseInt(line_list[1]);
-				boolean result1 = feline.Reach_pc(src, trg);
-				OwnMethods.Print(result1);
-				
-//				String query = String.format("match p = (a)-[*]->(b) where id(a) = %d and id(b) = %d return p limit 1", src, trg);
-//				String result = neo4j_Graph_Store.Execute(query);
-//				JsonArray jsonArray = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
-				
-				i++;
-//				if(result1 && (jsonArray.size() == 1) || ((!result1) && (jsonArray.size() == 0)))
-				if(result1 && (results.get(i-1) == 1) || ((!result1) && results.get(i-1) == 0))
-					continue;
-				else
-				{
-					OwnMethods.Print(String.format("%d, %d", src, trg));
-					return;
-				}
-				
-			}
-			reader.close();
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
-		
-	}
+//	public static void Reach_Correctness()
+//	{
+//		String testfile = String.format("/home/yuhansun/Downloads/tests1/cit-Patents_500k.test");
+//		BufferedReader reader = null;
+//		BufferedReader reader_result = null;
+//		Feline feline = new Feline("Patents","");
+//		Neo4j_Graph_Store neo4j_Graph_Store = new Neo4j_Graph_Store();
+//		try
+//		{
+//			//read result file
+//			String line = null;
+//			String result_path = "/home/yuhansun/Documents/share/result.txt";
+//			reader_result = new BufferedReader(new FileReader(new File(result_path)));
+//			ArrayList<Integer> results = new ArrayList<Integer>();
+//			while((line = reader_result.readLine()) != null)
+//			{
+//				int result = Integer.parseInt(line);
+//				results.add(result);
+//			}
+//			reader_result.close();
+//			
+//			reader = new BufferedReader(new FileReader(new File(testfile)));
+//			
+//			int i = 0;
+//			while((line = reader.readLine()) != null)
+//			{
+//				OwnMethods.Print(i);
+//				String[] line_list = line.split(" ");
+//				int src = Integer.parseInt(line_list[0]);
+//				int trg = Integer.parseInt(line_list[1]);
+//				boolean result1 = feline.Reach_pc(src, trg);
+//				OwnMethods.Print(result1);
+//				
+////				String query = String.format("match p = (a)-[*]->(b) where id(a) = %d and id(b) = %d return p limit 1", src, trg);
+////				String result = neo4j_Graph_Store.Execute(query);
+////				JsonArray jsonArray = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
+//				
+//				i++;
+////				if(result1 && (jsonArray.size() == 1) || ((!result1) && (jsonArray.size() == 0)))
+//				if(result1 && (results.get(i-1) == 1) || ((!result1) && results.get(i-1) == 0))
+//					continue;
+//				else
+//				{
+//					OwnMethods.Print(String.format("%d, %d", src, trg));
+//					return;
+//				}
+//				
+//			}
+//			reader.close();
+//		}
+//		catch (Exception e)
+//		{
+//			e.printStackTrace();
+//		}
+//		
+//	}
 	
-	public static void RangeReachTest()
-	{
-		String datasource = "Patents";
-		String table_name = String.format("feline_%s_random_80", datasource);
-		Traversal traversal = new Traversal();
-		Feline feline = new Feline(datasource, table_name);
-				
-		int graph_size = OwnMethods.GetNodeCount(datasource);
-		
-		double rect_size = 1;
-		boolean break_flag = false;
-		while(rect_size<=101)
-		{
-			HashSet<String> hSet = null;
-//			HashSet<String> hSet = OwnMethods.GenerateRandomInteger(graph_size, 500);
-			Iterator<String> iterator = hSet.iterator();
-			int i = 0;
-			int true_count = 0;
-			while(iterator.hasNext())
-			{
-				Random random = new Random();
-				double x = random.nextDouble()*(1000 - rect_size);
-				double y = random.nextDouble()*(1000 - rect_size);
-				MyRectangle rect = new MyRectangle(x,y, x+rect_size, y+rect_size);
-				
-				OwnMethods.Print(i);
-				int id = Integer.parseInt(iterator.next());
-				boolean result1 = traversal.ReachabilityQuery(id, rect);
-				OwnMethods.Print(result1);
-				boolean result2 = feline.RangeReach(id, rect);
-				OwnMethods.Print(result2);
-				
-				if(result1 != result2)
-				{
-					OwnMethods.Print(String.format("error in %s, (%f,%f,%f,%f)", id, rect.min_x, rect.min_y, rect.max_x, rect.max_y));
-					break_flag = true;
-					break;
-				}
-				
-				if(result1)
-					true_count++;
-				i++;
-			}
-			OwnMethods.Print(String.format("Total count: %d, true count: %d", i, true_count));
-			if(break_flag)
-				break;
-			rect_size *= 10;
-		}
-		
-		feline.Disconnect();
-		
-	}
+//	public static void RangeReachTest()
+//	{
+//		String datasource = "Patents";
+//		String table_name = String.format("feline_%s_random_80", datasource);
+//		Traversal traversal = new Traversal();
+//		Feline feline = new Feline(datasource, table_name);
+//				
+//		int graph_size = OwnMethods.GetNodeCount(datasource);
+//		
+//		double rect_size = 1;
+//		boolean break_flag = false;
+//		while(rect_size<=101)
+//		{
+//			HashSet<String> hSet = null;
+////			HashSet<String> hSet = OwnMethods.GenerateRandomInteger(graph_size, 500);
+//			Iterator<String> iterator = hSet.iterator();
+//			int i = 0;
+//			int true_count = 0;
+//			while(iterator.hasNext())
+//			{
+//				Random random = new Random();
+//				double x = random.nextDouble()*(1000 - rect_size);
+//				double y = random.nextDouble()*(1000 - rect_size);
+//				MyRectangle rect = new MyRectangle(x,y, x+rect_size, y+rect_size);
+//				
+//				OwnMethods.Print(i);
+//				int id = Integer.parseInt(iterator.next());
+//				boolean result1 = traversal.ReachabilityQuery(id, rect);
+//				OwnMethods.Print(result1);
+//				boolean result2 = feline.RangeReach(id, rect);
+//				OwnMethods.Print(result2);
+//				
+//				if(result1 != result2)
+//				{
+//					OwnMethods.Print(String.format("error in %s, (%f,%f,%f,%f)", id, rect.min_x, rect.min_y, rect.max_x, rect.max_y));
+//					break_flag = true;
+//					break;
+//				}
+//				
+//				if(result1)
+//					true_count++;
+//				i++;
+//			}
+//			OwnMethods.Print(String.format("Total count: %d, true count: %d", i, true_count));
+//			if(break_flag)
+//				break;
+//			rect_size *= 10;
+//		}
+//		
+//		feline.Disconnect();
+//		
+//	}
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
