@@ -23,9 +23,9 @@ public class data_precessing {
 	}};
 	
 	public static ArrayList<String> distribution_a = new ArrayList<String>(){{
-		add("Random_spatial_distributed");
-//		add("Clustered_distributed");
-//		add("Zipf_distributed");
+//		add("Random_spatial_distributed");
+		add("Clustered_distributed");
+		add("Zipf_distributed");
 	}};
 
 	//feline format
@@ -277,7 +277,10 @@ public class data_precessing {
 //		
 //	}
 	
-	public static void convertRealEntity()
+	/**
+	 * convert entity to psql format which can be used for either Feline and PLL
+	 */
+	public static void convertRealEntityRatio()
 	{
 		ArrayList<String> datasource_a = new ArrayList<String>(Arrays.asList("uniprotenc_150m", "Patents", "go_uniprot", "citeseerx"));
 		String distribution= Distribution.Random_spatial_distributed.name();
@@ -289,23 +292,41 @@ public class data_precessing {
 						datasource, distribution, ratio); 
 				String newfile_path = String.format("/mnt/hgfs/Ubuntu_shared/Real_Data/%s/%s/%d/entity_psql.txt",
 						datasource, distribution, ratio);
-				Entity_Convert(entity_location_path, newfile_path);
 				OwnMethods.Print(String.format("convert from %s to \n %s", entity_location_path, newfile_path));
+				Entity_Convert(entity_location_path, newfile_path);
 			}
 		}
-		
-//		String directory = String.format("/home/yuhansun/Documents/share/Real_Data/%s/%s/%d/", datasource, distribution, target_folder);
-//		String ori_graph_path = directory + "graph_dag_newformat.txt";
-//		String feline_graph_path = String.format("/home/yuhansun/Documents/FELINE_final/%s_%d.txt", datasource, target_folder);
-//	
-//		Graph_Convert(ori_graph_path, feline_graph_path);
-		
 	}
+	
+	/**
+	 * convert entity to psql format which can be used for either Feline and PLL
+	 * run after convertRealEntityRatio
+	 */
+	public static void convertRealEntityDistribution()
+	{
+		int ratio = 20;
+		ArrayList<String> datasource_a = new ArrayList<String>(Arrays.asList("uniprotenc_150m", "Patents", "go_uniprot", "citeseerx"));
+		for ( String datasource : datasource_a)
+		{
+			for ( String distribution : distribution_a)
+			{
+				String entity_location_path = String.format("/mnt/hgfs/Ubuntu_shared/Real_Data/%s/%s/%d/new_entity.txt", 
+						datasource, distribution, ratio); 
+				String newfile_path = String.format("/mnt/hgfs/Ubuntu_shared/Real_Data/%s/%s/%d/entity_psql.txt",
+						datasource, distribution, ratio);
+				OwnMethods.Print(String.format("convert from %s to \n %s", entity_location_path, newfile_path));
+				Entity_Convert(entity_location_path, newfile_path);
+			}
+		}
+	}
+	
+	
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		
-		convertRealEntity();
+//		convertRealEntityRatio();
+		convertRealEntityDistribution();
 		
 //		Graph_Convert();
 //		Entity_Convert();

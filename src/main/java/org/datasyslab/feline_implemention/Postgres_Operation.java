@@ -23,9 +23,9 @@ public class Postgres_Operation {
 	}};
 
 	public static ArrayList<String> distribution_a = new ArrayList<String>(){{
-		add("Random_spatial_distributed");
-		//		add("Clustered_distributed");
-		//		add("Zipf_distributed");
+//		add("Random_spatial_distributed");
+				add("Clustered_distributed");
+				add("Zipf_distributed");
 	}};
 
 	public static ArrayList<String> suffix_a = new ArrayList<String>(){{
@@ -404,6 +404,40 @@ public class Postgres_Operation {
 			e.printStackTrace();System.exit(-1);
 		}
 	}
+	
+	/**
+	 * run after loadDataRatio()
+	 */
+	public static void loadDataDistribution()
+	{
+		try {
+			int ratio = 20;
+			Postgres_Operation psql = new Postgres_Operation();
+			for(String datasource : datasource_a)
+			{
+				for (String distribution : distribution_a)
+				{
+					//create table
+					ArrayList<String> attribute_a = new ArrayList<String>(Arrays.asList("id", "scc_id", "location"));
+					ArrayList<String> type_a = new ArrayList<String>(Arrays.asList("bigint", "bigint", "point"));
+					String tablename = String.format("%s_%s_%d", datasource, distribution, ratio);
+					psql.CreateTable(tablename, attribute_a, type_a);
+					
+					//load data
+					String file_path = String.format("/mnt/hgfs/Ubuntu_shared/Real_Data/%s/%s/%d/entity_psql.txt", datasource, distribution, ratio);
+					String query = String.format("copy %s from '%s' using delimiters ' ' with null as 'null'", tablename, file_path);
+					OwnMethods.Print(query);
+					psql.st.execute(query);
+					
+					//create index
+					psql.CreateGistIndex(tablename, "location");
+				}
+			}
+			psql.DisConnect();
+		} catch (Exception e) {
+			e.printStackTrace();System.exit(-1);
+		}
+	}
 
 	public static void main(String[] args) {
 
@@ -417,7 +451,8 @@ public class Postgres_Operation {
 //		LoadData();
 //		CreateGistIndex();
 		
-		loadDataRatio();
+//		loadDataRatio();
+		loadDataDistribution();
 		
 	}
 

@@ -1243,7 +1243,7 @@ public class SpaReachPLL{
 				int nodeCount = OwnMethods.GetNodeCountGeneral(graph_path);
 
 				//			String resultpath = "/home/yuhansun/Documents/share/Real_Data/GeoReach_Experiment/result/Experiment_1/query_time_PLL_ratio_"+suffix+".csv";
-				String resultpath = "/mnt/hgfs/Experiment_Result/GeoReach_Experiment/result/ratio/query_time_feline.csv";
+				String resultpath = "/mnt/hgfs/Experiment_Result/GeoReach_Experiment/result/ratio/query_time_PLL.csv";
 				String db_path = String.format("/home/yuhansun/Documents/Real_data/%s/neo4j-community-2.3.3_PLL", datasource);
 				OwnMethods.WriteFile(resultpath, true, datasource+ "\t" + selectivity + "\tColdPostgresNeo4j\n");
 				OwnMethods.WriteFile(resultpath, true, "ratio\tSpa_time\treach_time\tPLL_time\tvisit_node_count\ttrue_count\n");
@@ -1300,7 +1300,7 @@ public class SpaReachPLL{
 						System.out.println(Neo4j_Graph_Store.StopServer(db_path));
 					}
 					OwnMethods.WriteFile(resultpath, true, ratio + "\t" + time_spa/experiment_count + "\t" + time_reach/experiment_count 
-							+ "\t" +time_PLL/experiment_count+"\t" + accessnodecount/experiment_count + "\t\n");
+							+ "\t" +time_PLL/experiment_count+"\t" + accessnodecount/experiment_count + "\t" + true_count + "\t\n");
 				}
 				OwnMethods.WriteFile(resultpath, true, "\n");
 			}		
