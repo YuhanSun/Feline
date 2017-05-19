@@ -49,6 +49,11 @@ public class Neo4j_Graph_Store {
 		return resource;
 	}
 	
+	/**
+	 * only for feline db
+	 * @param datasource
+	 * @return
+	 */
 	public static String StartMyServer(String datasource)
 	{
 		String command = "/home/yuhansun/Documents/Real_data/" + datasource+"/neo4j-community-2.3.3_feline/bin/neo4j start";
@@ -97,6 +102,11 @@ public class Neo4j_Graph_Store {
 		return result;
 	}
 	
+	/**
+	 * for feline db only
+	 * @param datasource
+	 * @return
+	 */
 	public static String StopMyServer(String datasource)
 	{
 		String command = "/home/yuhansun/Documents/Real_data/" + datasource+"/neo4j-community-2.3.3_feline/bin/neo4j stop";
