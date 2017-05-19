@@ -12,10 +12,17 @@ public class App
 	{
 //		string.;
 //		OwnMethods.Print(string);
+		
 	}
 	
     public static void main( String[] args )
     {
+//    	Experiment_feline.Experiment_Selectivity_Cold();
+//		SpaReachPLL.Experiment_Selectivity_Cold();
+		
+		Experiment_feline.Experiment_Distribution_Cold();
+		SpaReachPLL.Experiment_Distribution_Cold();
+    	
 //    	int start = 153933;
 //		MyRectangle query_rect = new MyRectangle(-115.487384,	36.047015,	-115.095464,	36.120295);
 //		
@@ -23,8 +30,8 @@ public class App
 //		boolean result = feline.RangeReach(start, query_rect);
 //		OwnMethods.Print(result);
     	
-    	SpaReachPLL.ExperimentColdPostgresNeo4j(2);
-    	Experiment_feline.ExperimentColdPostgresNeo4j(2);
+//    	SpaReachPLL.ExperimentColdPostgresNeo4j(2);
+//    	Experiment_feline.ExperimentColdPostgresNeo4j(2);
 		
 //    	ArrayList<Integer> tt = new ArrayList<Integer>(){
 //    		{
