@@ -220,6 +220,7 @@ public class Feline {
 		{
 			e.printStackTrace();
 			OwnMethods.Print(query);
+			System.exit(-1);
 		}
 		return false;
 	}
