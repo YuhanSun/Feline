@@ -19,6 +19,46 @@ import org.roaringbitmap.buffer.ImmutableRoaringBitmap;
 import com.sun.jersey.api.client.WebResource;
 
 public class OwnMethods {
+	public static int GetSpatialEntityCount(ArrayList<Entity> entities)
+    {
+    	int count = 0;
+    	for ( Entity entity : entities)
+    		if(entity.IsSpatial)
+    			count++;
+    	return count;
+    }
+	
+	public static ArrayList<Entity> ReadEntity(String entity_path) {
+        ArrayList<Entity> entities = null;
+        BufferedReader reader = null;
+        String str = null;
+        try {
+            reader = new BufferedReader(new FileReader(new File(entity_path)));
+            str = reader.readLine();
+            int node_count = Integer.parseInt(str);
+            entities = new ArrayList<Entity>(node_count);
+            int id = 0;
+            while ((str = reader.readLine()) != null) {
+                Entity entity;
+                String[] str_l = str.split(",");
+                int flag = Integer.parseInt(str_l[1]);
+                if (flag == 0) {
+                    entity = new Entity();
+                    entities.add(entity);
+                } else {
+                    entity = new Entity(Double.parseDouble(str_l[2]), Double.parseDouble(str_l[3]));
+                    entities.add(entity);
+                }
+                ++id;
+            }
+            reader.close();
+        }
+        catch (Exception e) {
+        	e.printStackTrace();
+        	System.exit(-1);
+        }
+        return entities;
+    }
 	
 	/**
 	 * read integer arraylist

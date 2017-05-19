@@ -9,8 +9,6 @@ import java.util.Arrays;
 import java.util.Random;
 
 import org.datasyslab.feline_implemention.Config.Distribution;
-import org.neo4j.kernel.impl.util.dbstructure.DbStructureArgumentFormatter;
-
 
 public class Experiment_feline {
 
@@ -853,10 +851,10 @@ public class Experiment_feline {
 		try 
 		{
 			double selectivity = 0.001;
-			int experiment_count = 3;
+			int experiment_count = 2;
 			String distribution = Distribution.Random_spatial_distributed.name();
-			ArrayList<String> datasource_a = new ArrayList<String>(Arrays.asList("uniprotenc_150m", "Patents", "go_uniprot", "citeseerx"));
-
+//			ArrayList<String> datasource_a = new ArrayList<String>(Arrays.asList("uniprotenc_150m", "Patents", "go_uniprot", "citeseerx"));
+			ArrayList<String> datasource_a = new ArrayList<String>(Arrays.asList("go_uniprot"));
 			for(String datasource : datasource_a)
 			{
 				String graph_path = String.format("/mnt/hgfs/Ubuntu_shared/Real_Data/%s/new_graph.txt", datasource);
@@ -865,9 +863,17 @@ public class Experiment_feline {
 				//			String resultpath = "/home/yuhansun/Documents/share/Real_Data/GeoReach_Experiment/result/Experiment_1/query_time_feline_ratio_"+suffix+".csv";
 				String resultpath = "/mnt/hgfs/Experiment_Result/GeoReach_Experiment/result/ratio/query_time_feline.csv";			
 				OwnMethods.WriteFile(resultpath, true, datasource+ "\t" + selectivity + "\tColdPostgresNeo4j\n");
-				OwnMethods.WriteFile(resultpath, true, "ratio\tSpa_time\treach_time\tfeline_time\tvisit_node_count\ttrue_count\n");
-				for(int ratio = 20;ratio<=80;ratio+=20)
+				OwnMethods.WriteFile(resultpath, true, "ratio\tSpa_time\treach_time\tfeline_time\tlocatedin_count\tvisit_node_count\ttrue_count\n");
+				
+				String log_path = "/mnt/hgfs/Experiment_Result/GeoReach_Experiment/result/ratio/query_Feline.log";
+				OwnMethods.WriteFile(log_path, true, datasource+ "\t" + selectivity + "\tColdPostgresNeo4j\n");
+
+//				for(int ratio = 20;ratio<=80;ratio+=20)
+				for ( int ratio = 80; ratio > 10; ratio -= 20)
 				{
+					OwnMethods.WriteFile(log_path, true, ratio + "\n");
+					OwnMethods.WriteFile(log_path, true, "Spa_time\treach_time\tfeline_time\tlocatedin_count\tvisit_node_count\tresult\n");
+					
 					String querynodeid_filepath = String.format("/mnt/hgfs/Experiment_Result/GeoReach_Experiment"
 							+ "/experiment_query/%s/experiment_id.txt", datasource);
 					ArrayList<Integer> nodeids = OwnMethods.readIntegerArray(querynodeid_filepath);
@@ -875,6 +881,98 @@ public class Experiment_feline {
 					int spaNodeCount = (int) (nodeCount * (100-ratio) / 100.0); 
 					String queryrectangle_filepath = String.format("/mnt/hgfs/Experiment_Result/GeoReach_Experiment"
 							+ "/experiment_query/%s/%s_%d_queryrect_%d.txt", datasource, distribution, ratio, (int) (spaNodeCount * selectivity));
+					ArrayList<MyRectangle> queryrectangles = OwnMethods.ReadExperimentQueryRectangle(queryrectangle_filepath);
+
+					int true_count = 0;
+					int accessnodecount = 0;
+					int time_feline = 0, time_spa = 0, time_reach = 0;
+					int locatedin_count = 0;
+					for(int i = 0;i<experiment_count;i++)
+					{
+						OwnMethods.Print(PostgresJDBC.StopServer(password));
+						OwnMethods.Print(OwnMethods.ClearCache(password));
+						OwnMethods.Print(PostgresJDBC.StartServer(password));
+						OwnMethods.Print(Neo4j_Graph_Store.StartMyServer(datasource));
+
+						Thread.currentThread().sleep(5000);
+						String table_name = String.format("%s_%s_%d",datasource, distribution, ratio);
+						Feline feline = new Feline(nodeCount, table_name);
+						Thread.currentThread().sleep(5000);
+
+						System.out.println(i);
+						int id = nodeids.get(i);
+						MyRectangle queryrect = queryrectangles.get(i);
+						long start = System.currentTimeMillis();
+						boolean result3 = feline.RangeReach(id, queryrect);
+						long time = System.currentTimeMillis() - start;
+						OwnMethods.Print(result3);
+						OwnMethods.Print(String.format("Postgres Time:%d\tNeo4j Time:%d", feline.spa_time, feline.reach_time));
+						OwnMethods.Print(String.format("Time:%d", time));
+						OwnMethods.Print(String.format("Locate count:%d\n", feline.locate_count));
+						if(result3)
+							true_count++;
+						
+
+						time_feline += time;
+						accessnodecount += feline.visited_count;
+						time_reach += feline.reach_time;
+						time_spa += feline.spa_time;
+						locatedin_count += feline.locate_count;
+
+						feline.Disconnect();
+						System.out.println(Neo4j_Graph_Store.StopMyServer(datasource));
+						OwnMethods.WriteFile(log_path, true, String.format("%d\t%d\t%d\t%d\t%d\t%s\n", 
+								feline.spa_time, feline.reach_time, time, feline.locate_count, feline.visited_count, String.valueOf(result3)));
+					}
+
+					OwnMethods.WriteFile(resultpath, true, ratio + "\t" + time_spa/experiment_count + "\t" + time_reach/experiment_count 
+							+ "\t" +time_feline/experiment_count+"\t" + locatedin_count / experiment_count + 
+							"\t" + accessnodecount/experiment_count + "\t" + true_count+"\n");
+					OwnMethods.WriteFile(log_path, true, "\n");
+				}
+				OwnMethods.WriteFile(resultpath, true, "\n");
+				OwnMethods.WriteFile(log_path, true, "\n");
+			}	
+		}
+		catch (Exception e) 
+		{
+			e.printStackTrace();System.exit(-1);
+		}
+	}
+	
+	/**
+	 * each query is separated
+	 */
+	public static void Experiment_Distribution_Cold()
+	{
+		try 
+		{
+			double selectivity = 0.001;
+			int experiment_count = 3;
+			int ratio = 20;
+			ArrayList<String> datasource_a = new ArrayList<String>(Arrays.asList("uniprotenc_150m", "Patents", "go_uniprot", "citeseerx"));
+			ArrayList<String> distribution_a = new ArrayList<String>(Arrays.asList(Distribution.Random_spatial_distributed.name(),
+					Distribution.Clustered_distributed.name(), Distribution.Zipf_distributed.name())); 
+
+			for(String datasource : datasource_a)
+			{
+				String graph_path = String.format("/mnt/hgfs/Ubuntu_shared/Real_Data/%s/new_graph.txt", datasource);
+				int nodeCount = OwnMethods.GetNodeCountGeneral(graph_path);
+
+				//			String resultpath = "/home/yuhansun/Documents/share/Real_Data/GeoReach_Experiment/result/Experiment_1/query_time_feline_ratio_"+suffix+".csv";
+				String resultpath = "/mnt/hgfs/Experiment_Result/GeoReach_Experiment/result/distribution/query_time_feline.csv";			
+				OwnMethods.WriteFile(resultpath, true, datasource+ "\t" + selectivity + "\tColdPostgresNeo4j\n");
+				OwnMethods.WriteFile(resultpath, true, "ratio\tSpa_time\treach_time\tfeline_time\tvisit_node_count\ttrue_count\n");
+				
+				for(String distribution : distribution_a)
+				{
+					String querynodeid_filepath = String.format("/mnt/hgfs/Experiment_Result/GeoReach_Experiment"
+							+ "/experiment_query/%s/experiment_id.txt", datasource);
+					ArrayList<Integer> nodeids = OwnMethods.readIntegerArray(querynodeid_filepath);
+
+					int spaNodeCount = (int) (nodeCount * (100-ratio) / 100.0); 
+					String queryrectangle_filepath = String.format("/mnt/hgfs/Experiment_Result/GeoReach_Experiment"
+							+ "/experiment_query/distribution/%s_%s_%d_queryrect_%d.txt", datasource, distribution, ratio, (int) (spaNodeCount * selectivity));
 					ArrayList<MyRectangle> queryrectangles = OwnMethods.ReadExperimentQueryRectangle(queryrectangle_filepath);
 
 					int true_count = 0;
@@ -926,43 +1024,48 @@ public class Experiment_feline {
 		}
 	}
 	
-	/**
-	 * each query is separated
-	 */
-	public static void Experiment_Distribution_Cold()
+	public static void Experiment_Selectivity_Cold()
 	{
 		try 
 		{
-			double selectivity = 0.001;
-			int experiment_count = 3;
 			int ratio = 20;
-			ArrayList<String> datasource_a = new ArrayList<String>(Arrays.asList("uniprotenc_150m", "Patents", "go_uniprot", "citeseerx"));
-			ArrayList<String> distribution_a = new ArrayList<String>(Arrays.asList(Distribution.Random_spatial_distributed.name(),
-					Distribution.Clustered_distributed.name(), Distribution.Zipf_distributed.name())); 
+			String distribution = Distribution.Random_spatial_distributed.name();
 
-			for(String datasource : datasource_a)
+			for(String datasource : dataset_a)
 			{
+				String entity_path = String.format("/mnt/hgfs/Ubuntu_shared/Real_Data/%s/%s/%s/new_entity.txt", 
+						datasource, distribution, ratio);
+				ArrayList<Entity> entities = OwnMethods.ReadEntity((String)entity_path);
+				int spaNodeCount = OwnMethods.GetSpatialEntityCount(entities);
+				
 				String graph_path = String.format("/mnt/hgfs/Ubuntu_shared/Real_Data/%s/new_graph.txt", datasource);
 				int nodeCount = OwnMethods.GetNodeCountGeneral(graph_path);
 
-				//			String resultpath = "/home/yuhansun/Documents/share/Real_Data/GeoReach_Experiment/result/Experiment_1/query_time_feline_ratio_"+suffix+".csv";
-				String resultpath = "/mnt/hgfs/Experiment_Result/GeoReach_Experiment/result/distribution/query_time_feline.csv";			
-				OwnMethods.WriteFile(resultpath, true, datasource+ "\t" + selectivity + "\tColdPostgresNeo4j\n");
+				String resultpath = "/mnt/hgfs/Experiment_Result/GeoReach_Experiment/result/selectivity/feline_querytime.csv";			
+				OwnMethods.WriteFile(resultpath, true, datasource+ "\t" + ratio + "\tColdPostgresNeo4j\n");
 				OwnMethods.WriteFile(resultpath, true, "ratio\tSpa_time\treach_time\tfeline_time\tvisit_node_count\ttrue_count\n");
-				for(String distribution : distribution_a)
+				
+				String log_path = "/mnt/hgfs/Experiment_Result/GeoReach_Experiment/result/selectivity/Feline.log";
+				OwnMethods.WriteFile(log_path, true, datasource+ "\t" + ratio + "\tColdPostgresNeo4j\n");
+				
+				for ( double selectivity = 0.0001; selectivity < 0.2; selectivity *= 10)
 				{
+					OwnMethods.WriteFile(log_path, true, selectivity + "\n");
+					OwnMethods.WriteFile(log_path, true, "Spa_time\treach_time\tfeline_time\tlocatedin_count\tvisit_node_count\tresult\n");
+					
 					String querynodeid_filepath = String.format("/mnt/hgfs/Experiment_Result/GeoReach_Experiment"
 							+ "/experiment_query/%s/experiment_id.txt", datasource);
 					ArrayList<Integer> nodeids = OwnMethods.readIntegerArray(querynodeid_filepath);
 
-					int spaNodeCount = (int) (nodeCount * (100-ratio) / 100.0); 
-					String queryrectangle_filepath = String.format("/mnt/hgfs/Experiment_Result/GeoReach_Experiment"
-							+ "/experiment_query/%s/%s_%d_queryrect_%d.txt", datasource, distribution, ratio, (int) (spaNodeCount * selectivity));
+					int name_suffix = (int) (selectivity * spaNodeCount);
+					String queryrectangle_filepath = String.format("/mnt/hgfs/Experiment_Result/GeoReach_Experiment/experiment_query"
+							+ "/selectivity/%s_%s_%d_queryrect_%d.txt", datasource, distribution, ratio, name_suffix);
 					ArrayList<MyRectangle> queryrectangles = OwnMethods.ReadExperimentQueryRectangle(queryrectangle_filepath);
 
 					int true_count = 0;
 					int accessnodecount = 0;
 					int time_feline = 0, time_spa = 0, time_reach = 0;
+					int experiment_count = datasource.equals("uniprotenc_150m") && selectivity > 0.01 ? 1:3;
 					for(int i = 0;i<experiment_count;i++)
 					{
 						OwnMethods.Print(PostgresJDBC.StopServer(password));
@@ -995,12 +1098,17 @@ public class Experiment_feline {
 
 						feline.Disconnect();
 						System.out.println(Neo4j_Graph_Store.StopMyServer(datasource));
+						
+						OwnMethods.WriteFile(log_path, true, String.format("%d\t%d\t%d\t%d\t%d\t%s\n", 
+								feline.spa_time, feline.reach_time, time, feline.locate_count, feline.visited_count, String.valueOf(result3)));
 					}
 
-					OwnMethods.WriteFile(resultpath, true, ratio + "\t" + time_spa/experiment_count + "\t" + time_reach/experiment_count 
+					OwnMethods.WriteFile(resultpath, true, selectivity + "\t" + time_spa/experiment_count + "\t" + time_reach/experiment_count 
 							+ "\t" +time_feline/experiment_count+"\t" + accessnodecount/experiment_count + "\t" + true_count+"\n");
+					OwnMethods.WriteFile(log_path, true, "\n");
 				}
 				OwnMethods.WriteFile(resultpath, true, "\n");
+				OwnMethods.WriteFile(log_path, true, "\n");
 			}	
 		}
 		catch (Exception e) 
@@ -1008,6 +1116,9 @@ public class Experiment_feline {
 			e.printStackTrace();System.exit(-1);
 		}
 	}
+	
+	static ArrayList<String> dataset_a = new ArrayList<String>(Arrays.asList("uniprotenc_150m", "Patents", "go_uniprot", "citeseerx"));
+//	static ArrayList<String> dataset_a = new ArrayList<String>(Arrays.asList("Patents", "go_uniprot", "citeseerx"));
 
 	public static void main(String[] args) 
 	{
@@ -1015,7 +1126,10 @@ public class Experiment_feline {
 		//		Experiment();
 //		ExperimentColdPostgresNeo4j(2);
 		//		ExperimentColdPostgresNeo4jCorrectness();
-		Experiment_Ratio_Cold();
+//		Experiment_Ratio_Cold();
+		Experiment_Distribution_Cold();
+//		Experiment_Selectivity_Cold();
+		
 	}
 
 }
